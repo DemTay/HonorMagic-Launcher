@@ -1,0 +1,20 @@
+# Custom Language File for Launcher Customizer
+
+[ejs.app]
+title = "Honor&Magic"
+
+[ejs.landing]
+mediaGitHubURL = "https://honor-magic.fr/"
+mediaXURL = "https://twitter.com/"
+mediaInstagramURL = "https://www.instagram.com/"
+mediaYouTubeURL = "https://www.youtube.com/"
+mediaDiscordURL = "https://discord.gg/ejJm4Hjh9k"
+
+[ejs.settings]
+sourceGithubLink = "https://github.com/DemTay/Launcher-Honor-Magic-1.12.2"
+supportLink = "https://github.com/DemTay/Launcher-Honor-Magic-1.12.2/issues"
+
+[ejs.welcome]
+welcomeHeader = "Bienvenue sur Honor&Magic"
+welcomeDescription = "H&M est un serveur roleplay sur Minecraft ou vous incarnerez un sorcier/une sorcière de la communauté magique de la célèbre saga Harry Potter. Ce serveur vous donnera la possibilité de créer votre propre personnage et l'incarner au sein même de l'univers d'Harry Potter, découvrez Poudlard mais aussi Pré-au-Lard sans oublier le célèbre Chemin de Traverse tout en interagissant avec d'autres joueurs, en vocal! Vos actes et vos choix définiront votre aventure qui sera alors alimentée par de nombreuses fonctionnalités, Elles vous permettront de vous immiscer au cœur de votre univers préféré."
+welcomeDescCTA = ""
