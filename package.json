@@ -1,6 +1,6 @@
 {
   "name": "HonorMagicLauncher",
-  "version": "0.0.6",
+  "version": "0.0.1",
   "productName": "",
   "description": "Modded Minecraft Launcher",
   "author": "Honor&Magic (Fork of Daniel Scalzi (https://github.com/dscalzi/))",
@@ -43,6 +43,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DemTay/Launcher-Honor-Magic-1.12.2.git"
+    "url": "git+https://github.com/DemTay/HonorMagic-Launcher.git"
   }
 }
