@@ -11,9 +11,9 @@
 ![Screenshot 1](https://i.imgur.com/dZSpio9.png)
 ![Screenshot 2](https://i.imgur.com/KbStQN8.png)
 
-## Downloads
+## Téléchargement
 
-You can download from [GitHub Releases](https://github.com/dscalzi/HeliosLauncher/releases)
+Vous pouvez télécharger notre launcher ici : [GitHub Releases](https://github.com/dscalzi/HeliosLauncher/releases)
 
 **Supported Platforms**
 
