@@ -17,4 +17,8 @@ Vous pouvez télécharger notre launcher ici : [GitHub Releases](https://github.
 
 **Systèmes d'exploitations :**
 
-<p align="left"><img src="https://i.imgur.com/2LUNiYT.png" alt="linux"></p>
+<p align="center">
+  <img src="https://i.imgur.com/1wUoCID.png" alt="windows" width="80" height="80">
+  <img src="https://i.imgur.com/YZi6D2s.png" alt="mac" width="80" height="80">
+  <img src="https://i.imgur.com/2LUNiYT.png" alt="linux" width="80" height="80">
+</p>
