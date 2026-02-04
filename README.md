@@ -15,6 +15,11 @@
 
 Vous pouvez télécharger notre launcher ici : [GitHub Releases](https://github.com/dscalzi/HeliosLauncher/releases)
 
+## Nous rejoindre
+
+Rejoins notre discord pour partager tes folles aventures : 
+[![Honor&Magic](https://discordapp.com/api/guilds/1287358173749051392/embed.png?style=banner3)](https://discord.gg/rcx6uv5QPE)
+
 **Systèmes d'exploitations :**
 
 <p align="left">
