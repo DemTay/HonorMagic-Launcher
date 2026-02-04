@@ -18,7 +18,7 @@ Vous pouvez télécharger notre launcher ici : [GitHub Releases](https://github.
 ## Nous rejoindre
 
 Rejoins notre discord pour partager tes folles aventures : 
-[![Honor&Magic](https://cdn.discordapp.com/banners/1287358173749051392/BANNER_ID.png?size=512)](https://discord.gg/rcx6uv5QPE)
+[![Honor&Magic](https://discordapp.com/api/guilds/1287358173749051392/embed.png?style=banner3)](https://discord.gg/rcx6uv5QPE)
 
 **Systèmes d'exploitations :**
 
