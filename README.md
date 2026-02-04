@@ -15,6 +15,6 @@
 
 Vous pouvez télécharger notre launcher ici : [GitHub Releases](https://github.com/dscalzi/HeliosLauncher/releases)
 
-**Supported Platforms**
+**Systèmes d'exploitations :**
 
-[<p align="left"><img src="https://img.shields.io/github/downloads/demtay/HonorMagic-Launcher/total.svg?style=for-the-badge" alt="downloads">](https://github.com/demtay/HonorMagic-Launcher/releases)</p>
+[<p align="left"><img src="https://i.imgur.com/2LUNiYT.png" alt="linux">]</p>
