@@ -13,12 +13,12 @@
 
 ## Téléchargement
 
-Vous pouvez télécharger notre launcher ici : [GitHub Releases](https://github.com/dscalzi/HeliosLauncher/releases)
+Vous pouvez télécharger notre launcher ici : [GitHub Releases](https://github.com/demtay/HonorMagic-Launcher/releases)
 
-<!-- ## Nous rejoindre
+## Nous rejoindre
 
 Rejoins notre discord pour partager tes folles aventures : 
-[![Honor&Magic](https://discordapp.com/api/guilds/1287358173749051392/embed.png?style=banner3)](https://discord.gg/rcx6uv5QPE) -->
+[![discord](https://i.imgur.com/smkeCsC.png)](https://discord.gg/m2bR6wb6Mu)
 
 **Systèmes d'exploitations :**
 
