@@ -17,7 +17,7 @@ Vous pouvez télécharger notre launcher ici : [GitHub Releases](https://github.
 
 ## Nous rejoindre
 
-Rejoins notre discord pour partager tes folles aventures : 
+Rejoins notre discord pour partager tes folles aventures : </br>
 [![discord](https://i.imgur.com/smkeCsC.png)](https://discord.gg/m2bR6wb6Mu)
 
 **Systèmes d'exploitations :**
