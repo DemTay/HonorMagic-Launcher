@@ -656,7 +656,7 @@ button.play:focus-visible {
 .launch-wardrobe {
     display: none;
 }
-.hm-app:has(.wardrobe:not([hidden])) :is(.launch-home, #launch_progress) {
+.hm-app:has(.wardrobe:not([hidden])) :is(.launch-home, #launch_progress, .update-bell) {
     display: none;
 }
 .hm-app:has(.wardrobe:not([hidden])) .launch-wardrobe {
@@ -676,7 +676,7 @@ button.play:focus-visible {
     opacity: 1 !important;
 }
 #main:has(#settingsContainer:not([style*='display: none']))
-    :is(.fitting, .wardrobe, .launch, #newsButton, #launch_progress) {
+    :is(.fitting, .wardrobe, .launch, #newsButton, #launch_progress, .update-bell) {
     visibility: hidden;
     opacity: 0;
     transition: none;
@@ -767,12 +767,32 @@ body:has(:is(#landingContainer, #settingsContainer):not([style*='display: none']
     margin: 0;
     border-radius: 0;
 }
-.hm-app #image_seal_container[update]::after,
-.hm-app #image_seal_container[update]::before {
+.update-bell[hidden] {
     display: none;
 }
-.hm-app #image_seal_container[update] {
-    border-bottom: 1px solid var(--gold);
+.update-bell {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1.9em;
+    margin-inline-start: 0.65em;
+    color: var(--gold);
+}
+.hm-app .update-bell svg {
+    width: 1.9em;
+    height: 1.9em;
+    transform-origin: 50% 12%;
+    animation: update-bell-ring 2.7s ease-in-out infinite;
+}
+.update-bell .update-bell-dot {
+    fill: currentColor;
+    stroke: none;
+}
+@keyframes update-bell-ring {
+    0%, 32%, 100% { transform: rotate(0deg); }
+    5%, 15% { transform: rotate(15deg); }
+    10%, 20% { transform: rotate(-14deg); }
+    25% { transform: rotate(5deg); }
 }
 .hm-app #settingsMediaButton {
     padding: 0;
@@ -807,9 +827,14 @@ body:has(:is(#landingContainer, #settingsContainer):not([style*='display: none']
     font: inherit;
     letter-spacing: normal;
     text-shadow: none;
+    padding-inline: 0.65em;
 }
 .hm-app #launch_button:disabled {
     opacity: 0.65;
+}
+.hm-app #launch_update_icon {
+    fill: none;
+    stroke: currentColor;
 }
 .hm-app #launch_details.launch-announcement {
     display: block;
@@ -831,6 +856,7 @@ body:has(:is(#landingContainer, #settingsContainer):not([style*='display: none']
 }
 @media (prefers-reduced-motion: reduce) {
     .hm-app :is(.fitting, .wardrobe, .shortcut) { transition: none; }
+    .hm-app .update-bell svg { animation: none; }
     #landingContainer :is(.launch, #newsButton, #launch_progress) { transition: none; }
 }
 .hm-app #server_status_wrapper {

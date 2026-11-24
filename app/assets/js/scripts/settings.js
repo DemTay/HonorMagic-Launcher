@@ -1448,8 +1448,17 @@ const settingsUpdateActionButton   = document.getElementById('settingsUpdateActi
 function settingsUpdateButtonStatus(text, disabled = false, handler = null){
     settingsUpdateActionButton.innerHTML = text
     settingsUpdateActionButton.disabled = disabled
-    if(handler != null){
-        settingsUpdateActionButton.onclick = handler
+    settingsUpdateActionButton.onclick = handler
+}
+
+function refreshSettingsUpdateAction(){
+    if (launcherUpdate.info == null) return
+    if (launcherUpdate.status === 'downloading') {
+        settingsUpdateButtonStatus(Lang.queryJS('landing.update.downloading'), true)
+    } else {
+        const label = launcherUpdate.status === 'ready' ? 'uicore.autoUpdate.installNowButton'
+            : launcherUpdate.info.downloadPage ? 'settings.updates.downloadButton' : 'settings.updates.downloadInLauncherButton'
+        settingsUpdateButtonStatus(Lang.queryJS(label), isGameBusy(), requestLauncherUpdate)
     }
 }
 
@@ -1461,29 +1470,19 @@ function settingsUpdateButtonStatus(text, disabled = false, handler = null){
  */
 function populateSettingsUpdateInformation(data, currentStatus = 'currentVersionTitle'){
     if(data != null){
-        settingsUpdateTitle.innerHTML = isPrerelease(data.version) ? Lang.queryJS('settings.updates.newPreReleaseTitle') : Lang.queryJS('settings.updates.newReleaseTitle')
+        const status = currentStatus === 'updateErrorTitle' ? currentStatus : isPrerelease(data.version) ? 'newPreReleaseTitle' : 'newReleaseTitle'
+        settingsUpdateTitle.textContent = Lang.queryJS(`settings.updates.${status}`)
         settingsUpdateChangelogCont.style.display = null
         settingsUpdateChangelogTitle.innerHTML = data.releaseName
         settingsUpdateChangelogText.innerHTML = data.releaseNotes
         populateVersionInformation(data.version, settingsUpdateVersionValue, settingsUpdateVersionTitle, settingsUpdateVersionCheck)
-        
-        if (data.downloadPage) {
-            settingsUpdateButtonStatus(Lang.queryJS('settings.updates.downloadButton'), false, () => {
-                shell.openExternal(data.downloadPage)
-            })
-        } else {
-            settingsUpdateButtonStatus(Lang.queryJS('settings.updates.downloadingButton'), true)
-        }
     } else {
         settingsUpdateTitle.textContent = Lang.queryJS(`settings.updates.${currentStatus}`)
         settingsUpdateChangelogCont.style.display = 'none'
         populateVersionInformation(remote.app.getVersion(), settingsUpdateVersionValue, settingsUpdateVersionTitle, settingsUpdateVersionCheck)
-        settingsUpdateButtonStatus(Lang.queryJS('settings.updates.checkForUpdatesButton'), false, () => {
-            if(!isDev){
-                ipcRenderer.send('autoUpdateAction', 'checkForUpdate')
-                settingsUpdateButtonStatus(Lang.queryJS('settings.updates.checkingForUpdatesButton'), true)
-            }
-        })
+        const checking = launcherUpdate.status === 'checking'
+        const label = checking ? 'settings.updates.checkingForUpdatesButton' : 'settings.updates.checkForUpdatesButton'
+        settingsUpdateButtonStatus(Lang.queryJS(label), checking, checkForLauncherUpdate)
     }
 }
 

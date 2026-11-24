@@ -129,9 +129,16 @@ desc = "Une erreur inconnue s'est produite. Veuillez consulter la console pour p
 
 [js.landing.launch]
 pleaseWait = "Veuillez patienter.."
+progress = "Progression du lancement"
 failureTitle = "Erreur lors du lancement"
 failureText = "Voir la console (CTRL + Shift + i) pour plus de détails."
 okay = "D'accord"
+
+[js.landing.update]
+available = "Mise à jour"
+downloading = "Téléchargement…"
+ready = "Installer la mise à jour"
+progress = "Progression du téléchargement de la mise à jour"
 
 [js.landing.selectedAccount]
 noAccountSelected = "Aucun compte sélectionné"
@@ -233,8 +240,8 @@ releaseNotesFailed = "Échec du chargement des notes de version."
 [js.settings.updates]
 newReleaseTitle = "Nouvelle version disponible"
 newPreReleaseTitle = "Nouveau pre-release disponible"
-downloadingButton = "Téléchargement.."
 downloadButton = "Télécharger depuis GitHub"
+downloadInLauncherButton = "Télécharger la mise à jour"
 currentVersionTitle = "Version installée"
 updateErrorTitle = "Impossible de vérifier ou de télécharger la mise à jour"
 latestVersionTitle = "Vous utilisez la dernière version"

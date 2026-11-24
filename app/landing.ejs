@@ -5,6 +5,7 @@
 </div>
 <header class="top">
 <a class="brand" id="image_seal_container" href="#" aria-label="Honor & Magic, accueil"><img src="assets/images/interface/honor-magic.webp" alt="" width="44" height="58"><span>HONOR <i>&</i> MAGIC<small>UN UNIVERS À ÉCRIRE</small></span></a>
+<span class="update-bell" id="launcher_update_bell" role="img" aria-label="<%= lang('landing.updateAvailableTooltip') %>" title="<%= lang('landing.updateAvailableTooltip') %>" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0"/><circle class="update-bell-dot" cx="18.7" cy="5" r="2.65"/></svg></span>
 <div class="titlebar-drag" aria-hidden="true"></div>
 <div class="shortcuts">
 <a class="shortcut" href="<%= lang('landing.mediaDiscordURL') %>" rel="noopener noreferrer" aria-label="Rejoindre Discord (nouvel onglet)"><img src="assets/images/interface/discord.svg" alt=""></a>
@@ -22,7 +23,7 @@
     <progress id="launch_progress" value="0" max="100" aria-label="Progression du lancement" hidden></progress>
     <div class="online" id="hm-server" role="status"><i class="dot" aria-hidden="true"></i><span>Statut du serveur…</span></div>
     <div class="launch launch-home">
-        <div id="launch_content"><button id="launch_button" type="button" class="play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4 20 12 6 20z"/></svg><b>Jouer</b></button></div>
+        <div id="launch_content"><button id="launch_button" type="button" class="play"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="launch_play_icon" d="M6 4 20 12 6 20z"/><path id="launch_update_icon" d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4" style="display: none"/></svg><b>Jouer</b></button></div>
         <span id="launch_details" class="launch-announcement" role="status"></span>
         <div class="players" id="server_status_wrapper"><span id="player_count"></span></div>
     </div>

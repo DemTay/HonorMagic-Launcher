@@ -37,51 +37,80 @@ webFrame.setVisualZoomLevelLimits(1, 1)
 
 // Initialize auto updates in production environments.
 let updateCheckListener
+let launcherUpdate = { status: 'idle', info: null }
 if(!isDev){
     ipcRenderer.on('autoUpdateNotification', (event, arg, info) => {
         switch(arg){
-            case 'checking-for-update':
-                loggerAutoUpdater.info('Checking for update..')
-                settingsUpdateTitle.textContent = Lang.queryJS('settings.updates.currentVersionTitle')
-                settingsUpdateButtonStatus(Lang.queryJS('uicore.autoUpdate.checkingForUpdateButton'), true)
-                break
             case 'update-available':
                 loggerAutoUpdater.info('New update available', info.version)
-                
-                if(info.downloadPage){
-                    showUpdateUI(info)
+                setLauncherUpdate('available', info)
+                break
+            case 'download-progress':
+                if (launcherUpdate.status === 'downloading' && Number.isFinite(info)) {
+                    setLauncherDownloadProgress(info)
                 }
-                
-                populateSettingsUpdateInformation(info)
                 break
             case 'update-downloaded':
                 loggerAutoUpdater.info('Update ' + info.version + ' ready to be installed.')
-                settingsUpdateButtonStatus(Lang.queryJS('uicore.autoUpdate.installNowButton'), false, () => {
-                    if(!isDev){
-                        ipcRenderer.send('autoUpdateAction', 'installUpdateNow')
-                    }
-                })
-                showUpdateUI(info)
+                setLauncherUpdate('ready', { ...launcherUpdate.info, ...info })
+                break
+            case 'update-download-error':
+                loggerAutoUpdater.error('Unable to download the update.', info)
+                setLauncherUpdate('available', launcherUpdate.info, 'updateErrorTitle')
                 break
             case 'update-not-available':
                 loggerAutoUpdater.info('No new update found.')
-                populateSettingsUpdateInformation(null, 'latestVersionTitle')
+                setLauncherUpdate('idle', null, 'latestVersionTitle')
                 break
             case 'ready':
-                updateCheckListener = setInterval(() => {
-                    ipcRenderer.send('autoUpdateAction', 'checkForUpdate')
-                }, 1800000)
-                ipcRenderer.send('autoUpdateAction', 'checkForUpdate')
+                clearInterval(updateCheckListener)
+                updateCheckListener = setInterval(checkForLauncherUpdate, 1800000)
+                checkForLauncherUpdate()
                 break
             case 'realerror':
-                loggerAutoUpdater.error('Unable to check for or download an update.', info)
-                populateSettingsUpdateInformation(null, 'updateErrorTitle')
+                loggerAutoUpdater.error('Unable to check for an update.', info)
+                setLauncherUpdate('idle', null, 'updateErrorTitle')
                 break
             default:
                 loggerAutoUpdater.info('Unknown argument', arg)
                 break
         }
     })
+}
+
+function setLauncherUpdate(status, info = null, settingsStatus){
+    if (launcherUpdate.status === 'downloading' && status !== 'downloading') {
+        remote.getCurrentWindow().setProgressBar(-1)
+        setLaunchDetails(status === 'ready' ? Lang.queryJS('landing.update.ready') : Lang.queryJS('settings.updates.updateErrorTitle'))
+    }
+    launcherUpdate = { status, info }
+    populateSettingsUpdateInformation(info, settingsStatus)
+    updateLaunchButton()
+}
+
+function checkForLauncherUpdate(){
+    if (isDev || !['idle', 'available'].includes(launcherUpdate.status)) return
+    setLauncherUpdate('checking')
+    ipcRenderer.send('autoUpdateAction', 'checkForUpdate')
+}
+
+function requestLauncherUpdate(){
+    if (isDev || isGameBusy()) return
+    if (launcherUpdate.status === 'ready') {
+        ipcRenderer.send('autoUpdateAction', 'installUpdateNow')
+    } else if (launcherUpdate.status === 'available') {
+        const info = launcherUpdate.info
+        if (info.downloadPage) {
+            shell.openExternal(info.downloadPage).catch(error => {
+                loggerAutoUpdater.error('Unable to open the releases page.', error)
+            })
+            return
+        }
+        setLauncherUpdate('downloading', info)
+        setLaunchDetails(Lang.queryJS('landing.update.downloading'))
+        setLauncherDownloadProgress(0)
+        ipcRenderer.send('autoUpdateAction', 'downloadUpdate')
+    }
 }
 
 /**
@@ -94,29 +123,6 @@ if(!isDev){
  */
 function changeAllowPrerelease(val){
     ipcRenderer.send('autoUpdateAction', 'allowPrereleaseChange', val)
-}
-
-function showUpdateUI(info){
-    //TODO Make this message a bit more informative `${info.version}`
-    document.getElementById('image_seal_container').setAttribute('update', true)
-    document.getElementById('image_seal_container').onclick = () => {
-        /*setOverlayContent('Update Available', 'A new update for the launcher is available. Would you like to install now?', 'Install', 'Later')
-        setOverlayHandler(() => {
-            if(!isDev){
-                ipcRenderer.send('autoUpdateAction', 'installUpdateNow')
-            } else {
-                console.error('Cannot install updates in development environment.')
-                toggleOverlay(false)
-            }
-        })
-        setDismissHandler(() => {
-            toggleOverlay(false)
-        })
-        toggleOverlay(true, true)*/
-        switchView(getCurrentView(), VIEWS.settings, 500, 500, () => {
-            settingsNavItemListener(document.getElementById('settingsNavUpdate'), false)
-        })
-    }
 }
 
 /* jQuery Example

@@ -16,8 +16,19 @@ const LangLoader                        = require('./app/assets/js/langloader')
 // Setup Lang
 LangLoader.setupLanguage()
 
+let autoUpdateSender
+let manualUpdateDownload
+
+function notifyAutoUpdate(status, info){
+    if (autoUpdateSender && !autoUpdateSender.isDestroyed()) {
+        autoUpdateSender.send('autoUpdateNotification', status, info)
+    }
+}
+
 // Setup auto updater.
 function initAutoUpdater(event, data) {
+    const firstInit = !autoUpdateSender
+    autoUpdateSender = event.sender
 
     if(data){
         autoUpdater.allowPrerelease = true
@@ -28,30 +39,31 @@ function initAutoUpdater(event, data) {
     
     // Directory builds do not include electron-builder's installer update configuration.
     const hasUpdateConfig = existsSync(path.join(process.resourcesPath, 'app-update.yml'))
-    const manualDownload = process.platform === 'darwin' || (!isDev && !hasUpdateConfig)
+    manualUpdateDownload = process.platform === 'darwin' || (!isDev && !hasUpdateConfig)
     if (!isDev && !hasUpdateConfig) {
         autoUpdater.setFeedURL({ provider: 'github', owner: 'DemTay', repo: 'HonorMagic-Launcher' })
-        autoUpdater.autoInstallOnAppQuit = false
     }
     if(isDev){
-        autoUpdater.autoInstallOnAppQuit = false
         autoUpdater.updateConfigPath = path.join(__dirname, 'dev-app-update.yml')
     }
-    autoUpdater.autoDownload = !manualDownload
+    autoUpdater.autoDownload = false
+    autoUpdater.autoInstallOnAppQuit = false
+    if (!firstInit) return
+
     autoUpdater.on('update-available', (info) => {
-        event.sender.send('autoUpdateNotification', 'update-available', {
+        notifyAutoUpdate('update-available', {
             ...info,
-            downloadPage: manualDownload ? 'https://github.com/DemTay/HonorMagic-Launcher/releases' : null
+            downloadPage: manualUpdateDownload ? 'https://github.com/DemTay/HonorMagic-Launcher/releases' : null
         })
     })
+    autoUpdater.on('download-progress', ({ percent }) => {
+        notifyAutoUpdate('download-progress', percent)
+    })
     autoUpdater.on('update-downloaded', (info) => {
-        event.sender.send('autoUpdateNotification', 'update-downloaded', info)
+        notifyAutoUpdate('update-downloaded', info)
     })
-    autoUpdater.on('update-not-available', (info) => {
-        event.sender.send('autoUpdateNotification', 'update-not-available', info)
-    })
-    autoUpdater.on('checking-for-update', () => {
-        event.sender.send('autoUpdateNotification', 'checking-for-update')
+    autoUpdater.on('update-not-available', () => {
+        notifyAutoUpdate('update-not-available')
     })
 }
 
@@ -67,14 +79,18 @@ ipcMain.on('autoUpdateAction', async (event, arg, data) => {
             try {
                 const result = await autoUpdater.checkForUpdates()
                 if (result == null) {
-                    event.sender.send('autoUpdateNotification', 'realerror')
-                } else {
-                    await result.downloadPromise
+                    notifyAutoUpdate('realerror')
                 }
             } catch (error) {
-                if (!event.sender.isDestroyed()) {
-                    event.sender.send('autoUpdateNotification', 'realerror', { code: error.code, message: error.message })
-                }
+                notifyAutoUpdate('realerror', { code: error.code, message: error.message })
+            }
+            break
+        case 'downloadUpdate':
+            if (manualUpdateDownload) break
+            try {
+                await autoUpdater.downloadUpdate()
+            } catch (error) {
+                notifyAutoUpdate('update-download-error', { code: error.code, message: error.message })
             }
             break
         case 'allowPrereleaseChange':

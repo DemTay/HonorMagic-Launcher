@@ -32,12 +32,16 @@ const ProcessBuilder          = require('./assets/js/processbuilder')
 // Launch Elements
 const launchButton            = document.getElementById('launch_button')
 const launchButtonLabel       = launchButton.querySelector('b')
+const launchPlayIcon          = document.getElementById('launch_play_icon')
+const launchUpdateIcon        = document.getElementById('launch_update_icon')
+const launcherUpdateBell      = document.getElementById('launcher_update_bell')
 const launch_details          = document.getElementById('launch_details')
 const launch_progress         = document.getElementById('launch_progress')
 const serverStatusIndicator   = document.getElementById('hm-server')
 const serverStatusLabel       = serverStatusIndicator.querySelector('span')
 const playerCount             = document.getElementById('player_count')
 let launchEnabled = false
+let launchInProgress = false
 let gameStarted = false
 let launchProgressFrame
 let launchProgressTimeout
@@ -56,10 +60,9 @@ const loggerLanding = LoggerUtil.getLogger('Landing')
  * @param {boolean} loading True if the loading area should be shown, otherwise false.
  */
 function toggleLaunchArea(loading){
-    const wasHidden = launch_progress.hidden
-    launch_progress.hidden = !loading
-    updateLaunchButton()
-    if (loading && wasHidden) {
+    const wasLaunching = launchInProgress
+    launchInProgress = loading
+    if (loading && !wasLaunching) {
         launch_progress.value = 0
         launchProgressTarget = 0
         launchProgressLimit = 15
@@ -71,11 +74,38 @@ function toggleLaunchArea(loading){
         launch_details.textContent = ''
         remote.getCurrentWindow().setProgressBar(-1)
     }
+    updateLaunchButton()
+}
+
+function isGameBusy(){
+    return launchInProgress || gameStarted || Boolean(proc)
 }
 
 function updateLaunchButton(){
-    launchButtonLabel.textContent = gameStarted ? 'Jeu lancé' : launch_progress.hidden ? 'Jouer' : 'Lancement…'
-    launchButton.disabled = !launchEnabled || !launch_progress.hidden || Boolean(proc)
+    const gameBusy = isGameBusy()
+    const updateStatus = gameBusy ? 'idle' : launcherUpdate.status
+    const updateActionable = updateStatus === 'available' || updateStatus === 'ready'
+    const downloadingUpdate = updateStatus === 'downloading'
+    const showUpdateIcon = updateActionable || downloadingUpdate
+
+    launcherUpdateBell.hidden = !updateActionable
+    launchPlayIcon.style.display = showUpdateIcon ? 'none' : ''
+    launchUpdateIcon.style.display = showUpdateIcon ? '' : 'none'
+    if (showUpdateIcon) {
+        launchButtonLabel.textContent = Lang.queryJS(`landing.update.${updateStatus}`)
+    } else {
+        launchButtonLabel.textContent = gameStarted ? 'Jeu lancé' : gameBusy ? 'Lancement…' : 'Jouer'
+    }
+    launchButton.disabled = gameBusy || downloadingUpdate || (!updateActionable && !launchEnabled)
+    launch_progress.hidden = !launchInProgress && !downloadingUpdate
+    launch_progress.setAttribute('aria-label', Lang.queryJS(downloadingUpdate ? 'landing.update.progress' : 'landing.launch.progress'))
+    refreshSettingsUpdateAction()
+}
+
+function setLauncherDownloadProgress(percent){
+    const value = Math.min(100, Math.max(0, percent))
+    launch_progress.value = value
+    remote.getCurrentWindow().setProgressBar(value / 100)
 }
 
 /**
@@ -94,7 +124,7 @@ function setLaunchDetails(details){
  * @param {number} limit Upper bound for visual progress while waiting for updates
  */
 function setLaunchPercentage(percent, limit = launchProgressLimit){
-    if (launch_progress.hidden) return
+    if (!launchInProgress) return
     launchProgressTarget = Math.max(launchProgressTarget, percent)
     launchProgressLimit = limit
 }
@@ -137,7 +167,11 @@ function setLaunchEnabled(val){
 
 // Bind launch button
 launchButton.addEventListener('click', async () => {
-    if (proc || !launch_progress.hidden) return
+    if (launchButton.disabled || isGameBusy() || launcherUpdate.status === 'downloading') return
+    if (launcherUpdate.status === 'available' || launcherUpdate.status === 'ready') {
+        requestLauncherUpdate()
+        return
+    }
     setLaunchDetails(Lang.queryJS('landing.launch.pleaseWait'))
     toggleLaunchArea(true)
     setLaunchPercentage(1)
