@@ -4,11 +4,9 @@
 // Requirements
 const { URL }                 = require('url')
 const {
-    MojangRestAPI,
     getServerStatus
 }                             = require('helios-core/mojang')
 const {
-    RestResponseStatus,
     isDisplayableError,
     validateLocalFile
 }                             = require('helios-core/common')
@@ -32,13 +30,21 @@ const DiscordWrapper          = require('./assets/js/discordwrapper')
 const ProcessBuilder          = require('./assets/js/processbuilder')
 
 // Launch Elements
-const launch_content          = document.getElementById('launch_content')
+const launchButton            = document.getElementById('launch_button')
+const launchButtonLabel       = launchButton.querySelector('b')
 const launch_details          = document.getElementById('launch_details')
 const launch_progress         = document.getElementById('launch_progress')
-const launch_progress_label   = document.getElementById('launch_progress_label')
-const launch_details_text     = document.getElementById('launch_details_text')
-const server_selection_button = document.getElementById('server_selection_button')
-const user_text               = document.getElementById('user_text')
+const serverStatusIndicator   = document.getElementById('hm-server')
+const serverStatusLabel       = serverStatusIndicator.querySelector('span')
+const playerCount             = document.getElementById('player_count')
+let launchEnabled = false
+let gameStarted = false
+let launchProgressFrame
+let launchProgressTimeout
+let launchProgressTime
+let launchProgressTarget = 0
+let launchProgressLimit = 15
+let proc
 
 const loggerLanding = LoggerUtil.getLogger('Landing')
 
@@ -50,13 +56,26 @@ const loggerLanding = LoggerUtil.getLogger('Landing')
  * @param {boolean} loading True if the loading area should be shown, otherwise false.
  */
 function toggleLaunchArea(loading){
-    if(loading){
-        launch_details.style.display = 'flex'
-        launch_content.style.display = 'none'
-    } else {
-        launch_details.style.display = 'none'
-        launch_content.style.display = 'inline-flex'
+    const wasHidden = launch_progress.hidden
+    launch_progress.hidden = !loading
+    updateLaunchButton()
+    if (loading && wasHidden) {
+        launch_progress.value = 0
+        launchProgressTarget = 0
+        launchProgressLimit = 15
+        launchProgressTime = performance.now()
+        launchProgressFrame = requestAnimationFrame(animateLaunchProgress)
+    } else if (!loading) {
+        cancelAnimationFrame(launchProgressFrame)
+        clearTimeout(launchProgressTimeout)
+        launch_details.textContent = ''
+        remote.getCurrentWindow().setProgressBar(-1)
     }
+}
+
+function updateLaunchButton(){
+    launchButtonLabel.textContent = gameStarted ? 'Jeu lancé' : launch_progress.hidden ? 'Jouer' : 'Lancement…'
+    launchButton.disabled = !launchEnabled || !launch_progress.hidden || Boolean(proc)
 }
 
 /**
@@ -65,18 +84,35 @@ function toggleLaunchArea(loading){
  * @param {string} details The new text for the loading details.
  */
 function setLaunchDetails(details){
-    launch_details_text.innerHTML = details
+    launch_details.textContent = details
 }
 
 /**
- * Set the value of the loading progress bar and display that value.
- * 
+ * Report measured progress and reserve room to advance until the next stage.
+ *
  * @param {number} percent Percentage (0-100)
+ * @param {number} limit Upper bound for visual progress while waiting for updates
  */
-function setLaunchPercentage(percent){
-    launch_progress.setAttribute('max', 100)
-    launch_progress.setAttribute('value', percent)
-    launch_progress_label.innerHTML = percent + '%'
+function setLaunchPercentage(percent, limit = launchProgressLimit){
+    if (launch_progress.hidden) return
+    launchProgressTarget = Math.max(launchProgressTarget, percent)
+    launchProgressLimit = limit
+}
+
+function animateLaunchProgress(time){
+    const current = launch_progress.value
+    const catchingUp = current < launchProgressTarget - 0.02
+    const goal = catchingUp ? launchProgressTarget : launchProgressLimit
+    const duration = catchingUp ? 140 : 12000
+    const elapsed = Math.max(0, time - launchProgressTime)
+    const next = current + Math.max(0, goal - current) * (1 - Math.exp(-elapsed / duration))
+    launch_progress.value = launchProgressTarget === 100 && next >= 99.98 ? 100 : next
+    launchProgressTime = time
+    if (launch_progress.value === 100) {
+        launchProgressTimeout = setTimeout(() => toggleLaunchArea(false), 500)
+    } else {
+        launchProgressFrame = requestAnimationFrame(animateLaunchProgress)
+    }
 }
 
 /**
@@ -84,9 +120,9 @@ function setLaunchPercentage(percent){
  * 
  * @param {number} percent Percentage (0-100)
  */
-function setDownloadPercentage(percent){
+function setDownloadPercentage(percent, start, end){
     remote.getCurrentWindow().setProgressBar(percent/100)
-    setLaunchPercentage(percent)
+    setLaunchPercentage(start + (end-start)*percent/100)
 }
 
 /**
@@ -95,11 +131,16 @@ function setDownloadPercentage(percent){
  * @param {boolean} val True to enable, false to disable.
  */
 function setLaunchEnabled(val){
-    document.getElementById('launch_button').disabled = !val
+    launchEnabled = val
+    updateLaunchButton()
 }
 
 // Bind launch button
-document.getElementById('launch_button').addEventListener('click', async e => {
+launchButton.addEventListener('click', async () => {
+    if (proc || !launch_progress.hidden) return
+    setLaunchDetails(Lang.queryJS('landing.launch.pleaseWait'))
+    toggleLaunchArea(true)
+    setLaunchPercentage(1)
     loggerLanding.info('Launching game..')
     try {
         const server = (await DistroAPI.getDistribution()).getServerById(ConfigManager.getSelectedServer())
@@ -110,7 +151,6 @@ document.getElementById('launch_button').addEventListener('click', async e => {
 
             setLaunchDetails(Lang.queryJS('landing.launch.pleaseWait'))
             toggleLaunchArea(true)
-            setLaunchPercentage(0, 100)
 
             const details = await validateSelectedJvm(ensureJavaDirIsRoot(jExe), server.effectiveJavaOptions.supported)
             if(details != null){
@@ -129,16 +169,12 @@ document.getElementById('launch_button').addEventListener('click', async e => {
 
 // Bind settings button
 document.getElementById('settingsMediaButton').onclick = async e => {
+    if (getCurrentView() === VIEWS.settings) {
+        if (!settingsNavDone.disabled) settingsNavDone.click()
+        return
+    }
     await prepareSettings()
     switchView(getCurrentView(), VIEWS.settings)
-}
-
-// Bind avatar overlay button.
-document.getElementById('avatarOverlay').onclick = async e => {
-    await prepareSettings()
-    switchView(getCurrentView(), VIEWS.settings, 500, 500, () => {
-        settingsNavItemListener(document.getElementById('settingsNavAccount'), false)
-    })
 }
 
 // Bind selected account
@@ -148,11 +184,9 @@ function updateSelectedAccount(authUser){
         if(authUser.displayName != null){
             username = authUser.displayName
         }
-        if(authUser.uuid != null){
-            document.getElementById('avatarContainer').style.backgroundImage = `url('https://mc-heads.net/body/${authUser.uuid}/right')`
-        }
     }
-    user_text.innerHTML = username
+    document.getElementById('settingsMediaButton').title = 'Paramètres · ' + username
+    document.dispatchEvent(new Event('minecraft-account-change'))
 }
 updateSelectedAccount(ConfigManager.getSelectedAccount())
 
@@ -163,116 +197,44 @@ function updateSelectedServer(serv){
     }
     ConfigManager.setSelectedServer(serv != null ? serv.rawServer.id : null)
     ConfigManager.save()
-    server_selection_button.innerHTML = '&#8226; ' + (serv != null ? serv.rawServer.name : Lang.queryJS('landing.noSelection'))
     if(getCurrentView() === VIEWS.settings){
         animateSettingsTabRefresh()
     }
     setLaunchEnabled(serv != null)
 }
-// Real text is set in uibinder.js on distributionIndexDone.
-server_selection_button.innerHTML = '&#8226; ' + Lang.queryJS('landing.selectedServer.loading')
-server_selection_button.onclick = async e => {
-    e.target.blur()
-    await toggleServerSelection(true)
-}
 
-// Update Mojang Status Color
-const refreshMojangStatuses = async function(){
-    loggerLanding.info('Refreshing Mojang Statuses..')
+let serverStatusCheck = 0
 
-    let status = 'grey'
-    let tooltipEssentialHTML = ''
-    let tooltipNonEssentialHTML = ''
-
-    const response = await MojangRestAPI.status()
-    let statuses
-    if(response.responseStatus === RestResponseStatus.SUCCESS) {
-        statuses = response.data
-    } else {
-        loggerLanding.warn('Unable to refresh Mojang service status.')
-        statuses = MojangRestAPI.getDefaultStatuses()
-    }
-    
-    greenCount = 0
-    greyCount = 0
-
-    for(let i=0; i<statuses.length; i++){
-        const service = statuses[i]
-
-        const tooltipHTML = `<div class="mojangStatusContainer">
-            <span class="mojangStatusIcon" style="color: ${MojangRestAPI.statusToHex(service.status)};">&#8226;</span>
-            <span class="mojangStatusName">${service.name}</span>
-        </div>`
-        if(service.essential){
-            tooltipEssentialHTML += tooltipHTML
-        } else {
-            tooltipNonEssentialHTML += tooltipHTML
-        }
-
-        if(service.status === 'yellow' && status !== 'red'){
-            status = 'yellow'
-        } else if(service.status === 'red'){
-            status = 'red'
-        } else {
-            if(service.status === 'grey'){
-                ++greyCount
-            }
-            ++greenCount
-        }
-
-    }
-
-    if(greenCount === statuses.length){
-        if(greyCount === statuses.length){
-            status = 'grey'
-        } else {
-            status = 'green'
-        }
-    }
-    
-    document.getElementById('mojangStatusEssentialContainer').innerHTML = tooltipEssentialHTML
-    document.getElementById('mojangStatusNonEssentialContainer').innerHTML = tooltipNonEssentialHTML
-    document.getElementById('mojang_status_icon').style.color = MojangRestAPI.statusToHex(status)
-}
-
-const refreshServerStatus = async (fade = false) => {
-    loggerLanding.info('Refreshing Server Status')
-    const serv = (await DistroAPI.getDistribution()).getServerById(ConfigManager.getSelectedServer())
-
-    let pLabel = Lang.queryJS('landing.serverStatus.server')
-    let pVal = Lang.queryJS('landing.serverStatus.offline')
-
+async function refreshServerStatus(){
+    const check = ++serverStatusCheck
+    const serverId = ConfigManager.getSelectedServer()
+    let status
+    let timeout
     try {
-
-        const servStat = await getServerStatus(47, serv.hostname, serv.port)
-        console.log(servStat)
-        pLabel = Lang.queryJS('landing.serverStatus.players')
-        pVal = servStat.players.online + '/' + servStat.players.max
-
-    } catch (err) {
-        loggerLanding.warn('Unable to refresh server status, assuming offline.')
-        loggerLanding.debug(err)
+        const server = (await DistroAPI.getDistribution()).getServerById(serverId)
+        if (server) {
+            // Bound the check even if the server closes the connection without a reply.
+            status = await Promise.race([
+                getServerStatus(47, server.hostname, server.port),
+                new Promise(resolve => { timeout = setTimeout(resolve, 8000) })
+            ])
+        }
+    } catch (error) {
+        loggerLanding.debug(error)
+    } finally {
+        clearTimeout(timeout)
     }
-    if(fade){
-        $('#server_status_wrapper').fadeOut(250, () => {
-            document.getElementById('landingPlayerLabel').innerHTML = pLabel
-            document.getElementById('player_count').innerHTML = pVal
-            $('#server_status_wrapper').fadeIn(500)
-        })
-    } else {
-        document.getElementById('landingPlayerLabel').innerHTML = pLabel
-        document.getElementById('player_count').innerHTML = pVal
-    }
-    
+    if (check !== serverStatusCheck || ConfigManager.getSelectedServer() !== serverId) return
+
+    const online = status != null
+    const players = status?.players?.online
+    serverStatusIndicator.dataset.online = String(online)
+    serverStatusLabel.textContent = online ? 'Serveur en ligne' : 'Serveur hors ligne'
+    playerCount.textContent = Number.isInteger(players) ? `${players} ${players === 1 ? 'joueur connecté' : 'joueurs connectés'}` : ''
 }
 
-refreshMojangStatuses()
-// Server Status is refreshed in uibinder.js on distributionIndexDone.
+setInterval(refreshServerStatus, 30000)
 
-// Refresh statuses every hour. The status page itself refreshes every day so...
-let mojangStatusListener = setInterval(() => refreshMojangStatuses(true), 60*60*1000)
-// Set refresh rate to once every 5 minutes.
-let serverStatusListener = setInterval(() => refreshServerStatus(true), 300000)
 
 /**
  * Shows an error overlay, toggles off the launch area.
@@ -302,7 +264,7 @@ async function asyncSystemScan(effectiveJavaOptions, launchAfter = true){
 
     setLaunchDetails(Lang.queryJS('landing.systemScan.checking'))
     toggleLaunchArea(true)
-    setLaunchPercentage(0, 100)
+    setLaunchPercentage(2)
 
     const jvmDetails = await discoverBestJvmInstallation(
         ConfigManager.getDataDirectory(),
@@ -318,12 +280,12 @@ async function asyncSystemScan(effectiveJavaOptions, launchAfter = true){
             Lang.queryJS('landing.systemScan.installJava'),
             Lang.queryJS('landing.systemScan.installJavaManually')
         )
-        setOverlayHandler(() => {
+        setOverlayHandler(async () => {
             setLaunchDetails(Lang.queryJS('landing.systemScan.javaDownloadPrepare'))
             toggleOverlay(false)
             
             try {
-                downloadJava(effectiveJavaOptions, launchAfter)
+                await downloadJava(effectiveJavaOptions, launchAfter)
             } catch(err) {
                 loggerLanding.error('Unhandled error in Java Download', err)
                 showLaunchFailure(Lang.queryJS('landing.systemScan.javaDownloadFailureTitle'), Lang.queryJS('landing.systemScan.javaDownloadFailureText'))
@@ -387,9 +349,9 @@ async function downloadJava(effectiveJavaOptions, launchAfter = true) {
     let received = 0
     await downloadFile(asset.url, asset.path, ({ transferred }) => {
         received = transferred
-        setDownloadPercentage(Math.trunc((transferred/asset.size)*100))
+        setDownloadPercentage(Math.trunc((transferred/asset.size)*100),2,14)
     })
-    setDownloadPercentage(100)
+    setDownloadPercentage(100,2,14)
 
     if(received != asset.size) {
         loggerLanding.warn(`Java Download: Expected ${asset.size} bytes but received ${received}`)
@@ -436,14 +398,11 @@ async function downloadJava(effectiveJavaOptions, launchAfter = true) {
 }
 
 // Keep reference to Minecraft Process
-let proc
 // Is DiscordRPC enabled
-let hasRPC = false
 // Joined server regex
 // Change this if your server uses something different.
 const GAME_JOINED_REGEX = /\[.+\]: Sound engine started/
 const GAME_LAUNCH_REGEX = /^\[.+\]: (?:MinecraftForge .+ Initialized|ModLauncher .+ starting: .+|Loading Minecraft .+ with Fabric Loader .+)$/
-const MIN_LINGER = 5000
 
 async function dlAsync(login = true) {
 
@@ -470,13 +429,14 @@ async function dlAsync(login = true) {
     if(login) {
         if(ConfigManager.getSelectedAccount() == null){
             loggerLanding.error('You must be logged into an account.')
+            showLaunchFailure(Lang.queryJS('landing.launch.failureTitle'), 'Connectez-vous pour lancer le jeu.')
             return
         }
     }
 
     setLaunchDetails(Lang.queryJS('landing.dlAsync.pleaseWait'))
     toggleLaunchArea(true)
-    setLaunchPercentage(0, 100)
+    setLaunchPercentage(15, 50)
 
     const fullRepairModule = new FullRepair(
         ConfigManager.getCommonDirectory(),
@@ -504,9 +464,9 @@ async function dlAsync(login = true) {
     let invalidFileCount = 0
     try {
         invalidFileCount = await fullRepairModule.verifyFiles(percent => {
-            setLaunchPercentage(percent)
+            setLaunchPercentage(15 + percent * .35)
         })
-        setLaunchPercentage(100)
+        setLaunchPercentage(50)
     } catch (err) {
         loggerLaunchSuite.error('Error during file validation.')
         showLaunchFailure(Lang.queryJS('landing.dlAsync.errorDuringFileVerificationTitle'), err.displayable || Lang.queryJS('landing.dlAsync.seeConsoleForDetails'))
@@ -517,12 +477,12 @@ async function dlAsync(login = true) {
     if(invalidFileCount > 0) {
         loggerLaunchSuite.info('Downloading files.')
         setLaunchDetails(Lang.queryJS('landing.dlAsync.downloadingFiles'))
-        setLaunchPercentage(0)
+        setLaunchPercentage(50, 95)
         try {
             await fullRepairModule.download(percent => {
-                setDownloadPercentage(percent)
+                setDownloadPercentage(percent,50,94)
             })
-            setDownloadPercentage(100)
+            setDownloadPercentage(100,50,94)
         } catch(err) {
             loggerLaunchSuite.error('Error during file download.')
             showLaunchFailure(Lang.queryJS('landing.dlAsync.errorDuringFileDownloadTitle'), err.displayable || Lang.queryJS('landing.dlAsync.seeConsoleForDetails'))
@@ -538,6 +498,7 @@ async function dlAsync(login = true) {
     fullRepairModule.destroyReceiver()
 
     setLaunchDetails(Lang.queryJS('landing.dlAsync.preparingToLaunch'))
+    setLaunchPercentage(95, 98)
 
     const mojangIndexProcessor = new MojangIndexProcessor(
         ConfigManager.getCommonDirectory(),
@@ -552,7 +513,19 @@ async function dlAsync(login = true) {
     const versionData = await mojangIndexProcessor.getVersionJson()
 
     if(login) {
-        const authUser = ConfigManager.getSelectedAccount()
+        const account = ConfigManager.getSelectedAccount()
+        if (!account) {
+            showLaunchFailure(Lang.queryJS('landing.launch.failureTitle'), 'Connecte un compte pour lancer le jeu.')
+            return
+        }
+        let authUser
+        try {
+            authUser = await applyWardrobeSkin(account)
+        } catch (error) {
+            loggerLaunchSuite.warn('Impossible de synchroniser le skin', error.code || error.name)
+            showLaunchFailure('Impossible d’appliquer le skin', 'Vérifie la connexion à ton compte Microsoft, puis réessaie ou sélectionne « Par défaut ».')
+            return
+        }
         loggerLaunchSuite.info(`Sending selected account (${authUser.displayName}) to ProcessBuilder.`)
         let pb = new ProcessBuilder(serv, versionData, modLoaderData, authUser, remote.app.getVersion())
         setLaunchDetails(Lang.queryJS('landing.dlAsync.launchingGame'))
@@ -560,30 +533,27 @@ async function dlAsync(login = true) {
         // const SERVER_JOINED_REGEX = /\[.+\]: \[CHAT\] [a-zA-Z0-9_]{1,16} joined the game/
         const SERVER_JOINED_REGEX = new RegExp(`\\[.+\\]: \\[CHAT\\] ${authUser.displayName} joined the game`)
 
-        const onLoadComplete = () => {
-            toggleLaunchArea(false)
-            if(hasRPC){
-                DiscordWrapper.updateDetails(Lang.queryJS('landing.discord.loading'))
-                proc.stdout.on('data', gameStateChange)
-            }
-            proc.stdout.removeListener('data', tempListener)
-            proc.stderr.removeListener('data', gameErrorListener)
-        }
-        const start = Date.now()
+        let hasRPC = false
+        let pendingOutput = ''
 
         // Attach a temporary listener to the client output.
         // Will wait for a certain bit of text meaning that
         // the client application has started, and we can hide
         // the progress bar stuff.
         const tempListener = function(data){
-            if(GAME_LAUNCH_REGEX.test(data.trim())){
-                const diff = Date.now()-start
-                if(diff < MIN_LINGER) {
-                    setTimeout(onLoadComplete, MIN_LINGER-diff)
-                } else {
-                    onLoadComplete()
-                }
+            const lines = (pendingOutput + data).split('\n')
+            pendingOutput = lines.pop()
+            if (!lines.some(line => GAME_LAUNCH_REGEX.test(line.trim())) && !GAME_LAUNCH_REGEX.test(pendingOutput.trim())) return
+            gameStarted = true
+            setLaunchPercentage(100, 100)
+            updateLaunchButton()
+            setLaunchDetails('Jeu lancé')
+            if (hasRPC) {
+                DiscordWrapper.updateDetails(Lang.queryJS('landing.discord.loading'))
+                proc.stdout.on('data', gameStateChange)
             }
+            proc.stdout.removeListener('data', tempListener)
+            proc.stderr.removeListener('data', gameErrorListener)
         }
 
         // Listener for Discord RPC.
@@ -605,8 +575,23 @@ async function dlAsync(login = true) {
         }
 
         try {
+            await pb.prepareMultiplayer()
             // Build Minecraft process.
             proc = pb.build()
+            setLaunchPercentage(98, 99)
+            proc.once('close', () => {
+                proc = null
+                gameStarted = false
+                toggleLaunchArea(false)
+                if (hasRPC) {
+                    loggerLaunchSuite.info('Shutting down Discord Rich Presence..')
+                    DiscordWrapper.shutdownRPC()
+                }
+            })
+            proc.once('error', error => {
+                loggerLaunchSuite.error('Error during launch', error)
+                showLaunchFailure(Lang.queryJS('landing.dlAsync.errorDuringLaunchTitle'), Lang.queryJS('landing.dlAsync.checkConsoleForDetails'))
+            })
 
             // Bind listeners to stdout.
             proc.stdout.on('data', tempListener)
@@ -618,12 +603,6 @@ async function dlAsync(login = true) {
             if(distro.rawDistribution.discord != null && serv.rawServer.discord != null){
                 DiscordWrapper.initRPC(distro.rawDistribution.discord, serv.rawServer.discord)
                 hasRPC = true
-                proc.on('close', (code, signal) => {
-                    loggerLaunchSuite.info('Shutting down Discord Rich Presence..')
-                    DiscordWrapper.shutdownRPC()
-                    hasRPC = false
-                    proc = null
-                })
             }
 
         } catch(err) {
@@ -652,76 +631,29 @@ const nELoadSpan                    = document.getElementById('nELoadSpan')
 
 // News slide caches.
 let newsActive = false
-let newsGlideCount = 0
 
-/**
- * Show the news UI via a slide animation.
- * 
- * @param {boolean} up True to slide up, otherwise false. 
- */
-function slide_(up){
-    const lCUpper = document.querySelector('#landingContainer > #upper')
-    const lCLLeft = document.querySelector('#landingContainer > #lower > #left')
-    const lCLCenter = document.querySelector('#landingContainer > #lower > #center')
-    const lCLRight = document.querySelector('#landingContainer > #lower > #right')
-    const newsBtn = document.querySelector('#landingContainer > #lower > #center #content')
-    const landingContainer = document.getElementById('landingContainer')
-    const newsContainer = document.querySelector('#landingContainer > #newsContainer')
 
-    newsGlideCount++
-
-    if(up){
-        lCUpper.style.top = '-200vh'
-        lCLLeft.style.top = '-200vh'
-        lCLCenter.style.top = '-200vh'
-        lCLRight.style.top = '-200vh'
-        newsBtn.style.top = '130vh'
-        newsContainer.style.top = '0px'
-        //date.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric'})
-        //landingContainer.style.background = 'rgba(29, 29, 29, 0.55)'
-        landingContainer.style.background = 'rgba(0, 0, 0, 0.50)'
-        setTimeout(() => {
-            if(newsGlideCount === 1){
-                lCLCenter.style.transition = 'none'
-                newsBtn.style.transition = 'none'
-            }
-            newsGlideCount--
-        }, 2000)
-    } else {
-        setTimeout(() => {
-            newsGlideCount--
-        }, 2000)
-        landingContainer.style.background = null
-        lCLCenter.style.transition = null
-        newsBtn.style.transition = null
-        newsContainer.style.top = '100%'
-        lCUpper.style.top = '0px'
-        lCLLeft.style.top = '0px'
-        lCLCenter.style.top = '0px'
-        lCLRight.style.top = '0px'
-        newsBtn.style.top = '10px'
-    }
-}
-
-// Bind news button.
-document.getElementById('newsButton').onclick = () => {
-    // Toggle tabbing.
-    if(newsActive){
-        $('#landingContainer *').removeAttr('tabindex')
-        $('#newsContainer *').attr('tabindex', '-1')
-    } else {
-        $('#landingContainer *').attr('tabindex', '-1')
-        $('#newsContainer, #newsContainer *, #lower, #lower #center *').removeAttr('tabindex')
-        if(newsAlertShown){
-            $('#newsButtonAlert').fadeOut(2000)
+function showNews(open) {
+    newsActive = open
+    const container = document.getElementById('newsContainer')
+    container.inert = !open
+    container.classList.toggle('open',open)
+    document.querySelector('.hm-app').inert = open
+    if (open) {
+        $('#newsContainer *').removeAttr('tabindex')
+        document.getElementById('hm-news-close').focus()
+        if (newsAlertShown) {
+            $('#newsButtonAlert').fadeOut(200)
             newsAlertShown = false
             ConfigManager.setNewsCacheDismissed(true)
             ConfigManager.save()
         }
+    } else {
+        document.getElementById('newsButton').focus()
     }
-    slide_(!newsActive)
-    newsActive = !newsActive
 }
+document.getElementById('newsButton').onclick = () => showNews(!newsActive)
+document.getElementById('hm-news-close').onclick = () => showNews(false)
 
 // Array to store article meta.
 let newsArr = null
@@ -920,7 +852,7 @@ document.addEventListener('keydown', (e) => {
         //     document.getElementById('newsButton').click()
         // }
     } else {
-        if(getCurrentView() === VIEWS.landing){
+        if(getCurrentView() === VIEWS.landing && !document.getElementById('newsButton').hidden && document.querySelector('.wardrobe').hidden && !document.querySelector('dialog[open]')){
             if(e.key === 'ArrowUp'){
                 document.getElementById('newsButton').click()
             }
@@ -959,6 +891,7 @@ function displayArticle(articleObject, index){
 async function loadNews(){
 
     const distroData = await DistroAPI.getDistribution()
+    document.getElementById('newsButton').hidden = !distroData.rawDistribution.rss
     if(!distroData.rawDistribution.rss) {
         loggerLanding.debug('No RSS feed provided.')
         return null

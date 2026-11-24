@@ -9,6 +9,7 @@ const os                    = require('os')
 const path                  = require('path')
 
 const ConfigManager            = require('./configmanager')
+const addHonorMagicServer      = require('./multiplayerservers')
 
 const logger = LoggerUtil.getLogger('ProcessBuilder')
 
@@ -41,6 +42,15 @@ class ProcessBuilder {
         this.llPath = null
     }
     
+    async prepareMultiplayer(){
+        if (!this.server.rawServer.mainServer) return
+        try {
+            await addHonorMagicServer(this.gameDir)
+        } catch (error) {
+            logger.warn('Impossible d’ajouter Honor & Magic à la liste multijoueur.', error)
+        }
+    }
+
     /**
      * Convienence method to run the functions typically used to build a process.
      */
@@ -510,7 +520,7 @@ class ProcessBuilder {
                             val = this.authUser.accessToken
                             break
                         case 'user_type':
-                            val = this.authUser.type === 'microsoft' ? 'msa' : 'mojang'
+                            val = 'msa'
                             break
                         case 'version_type':
                             val = this.vanillaManifest.type
@@ -594,7 +604,7 @@ class ProcessBuilder {
                         val = this.authUser.accessToken
                         break
                     case 'user_type':
-                        val = this.authUser.type === 'microsoft' ? 'msa' : 'mojang'
+                        val = 'msa'
                         break
                     case 'user_properties': // 1.8.9 and below.
                         val = '{}'
