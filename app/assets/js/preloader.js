@@ -39,12 +39,7 @@ function onDistroLoad(data){
             ConfigManager.save()
         }
     }
-    const notifyRenderer = () => ipcRenderer.send('distributionIndexDone', data != null)
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', notifyRenderer, { once: true })
-    } else {
-        notifyRenderer()
-    }
+    ipcRenderer.send('distributionIndexDone', data != null)
 }
 
 // Ensure Distribution is downloaded and cached.

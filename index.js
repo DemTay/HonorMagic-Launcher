@@ -5,9 +5,9 @@ remoteMain.initialize()
 const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron')
 const autoUpdater                       = require('electron-updater').autoUpdater
 const ejse                              = require('ejs-electron')
+const fs                                = require('fs')
 const isDev                             = require('./app/assets/js/isdev')
 const path                              = require('path')
-const { existsSync }                    = require('fs')
 const semver                            = require('semver')
 const { pathToFileURL }                 = require('url')
 const { AZURE_CLIENT_ID, MSFT_OPCODE, MSFT_REPLY_TYPE, MSFT_ERROR, SHELL_OPCODE } = require('./app/assets/js/ipcconstants')
@@ -26,23 +26,15 @@ function initAutoUpdater(event, data) {
         // autoUpdater.allowPrerelease = true
     }
     
-    // Directory builds do not include electron-builder's installer update configuration.
-    const hasUpdateConfig = existsSync(path.join(process.resourcesPath, 'app-update.yml'))
-    const manualDownload = process.platform === 'darwin' || (!isDev && !hasUpdateConfig)
-    if (!isDev && !hasUpdateConfig) {
-        autoUpdater.setFeedURL({ provider: 'github', owner: 'DemTay', repo: 'HonorMagic-Launcher' })
-        autoUpdater.autoInstallOnAppQuit = false
-    }
     if(isDev){
         autoUpdater.autoInstallOnAppQuit = false
         autoUpdater.updateConfigPath = path.join(__dirname, 'dev-app-update.yml')
     }
-    autoUpdater.autoDownload = !manualDownload
+    if(process.platform === 'darwin'){
+        autoUpdater.autoDownload = false
+    }
     autoUpdater.on('update-available', (info) => {
-        event.sender.send('autoUpdateNotification', 'update-available', {
-            ...info,
-            downloadPage: manualDownload ? 'https://github.com/DemTay/HonorMagic-Launcher/releases' : null
-        })
+        event.sender.send('autoUpdateNotification', 'update-available', info)
     })
     autoUpdater.on('update-downloaded', (info) => {
         event.sender.send('autoUpdateNotification', 'update-downloaded', info)
@@ -53,10 +45,13 @@ function initAutoUpdater(event, data) {
     autoUpdater.on('checking-for-update', () => {
         event.sender.send('autoUpdateNotification', 'checking-for-update')
     })
+    autoUpdater.on('error', (err) => {
+        event.sender.send('autoUpdateNotification', 'realerror', err)
+    }) 
 }
 
 // Open channel to listen for update actions.
-ipcMain.on('autoUpdateAction', async (event, arg, data) => {
+ipcMain.on('autoUpdateAction', (event, arg, data) => {
     switch(arg){
         case 'initAutoUpdater':
             console.log('Initializing auto updater.')
@@ -64,18 +59,10 @@ ipcMain.on('autoUpdateAction', async (event, arg, data) => {
             event.sender.send('autoUpdateNotification', 'ready')
             break
         case 'checkForUpdate':
-            try {
-                const result = await autoUpdater.checkForUpdates()
-                if (result == null) {
-                    event.sender.send('autoUpdateNotification', 'realerror')
-                } else {
-                    await result.downloadPromise
-                }
-            } catch (error) {
-                if (!event.sender.isDestroyed()) {
-                    event.sender.send('autoUpdateNotification', 'realerror', { code: error.code, message: error.message })
-                }
-            }
+            autoUpdater.checkForUpdates()
+                .catch(err => {
+                    event.sender.send('autoUpdateNotification', 'realerror', err)
+                })
             break
         case 'allowPrereleaseChange':
             if(!data){
@@ -158,9 +145,13 @@ ipcMain.on(MSFT_OPCODE.OPEN_LOGIN, (ipcEvent, ...arguments_) => {
 
     msftAuthWindow.webContents.on('did-navigate', (_, uri) => {
         if (uri.startsWith(REDIRECT_URI_PREFIX)) {
-            const queryMap = Object.fromEntries(new URL(uri).searchParams)
+            let queryMap = {}
 
-            ipcEvent.reply(MSFT_OPCODE.REPLY_LOGIN, MSFT_REPLY_TYPE.SUCCESS, queryMap, msftAuthViewSuccess, msftAuthViewOnClose)
+            new URL(uri).searchParams.forEach((v, k) => {
+                queryMap[k] = v;
+            });
+
+            ipcEvent.reply(MSFT_OPCODE.REPLY_LOGIN, MSFT_REPLY_TYPE.SUCCESS, queryMap, msftAuthViewSuccess)
 
             msftAuthSuccess = true
             msftAuthWindow.close()
@@ -230,16 +221,12 @@ ipcMain.on(MSFT_OPCODE.OPEN_LOGOUT, (ipcEvent, uuid, isLastAccount) => {
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win
-const launcherBackgrounds = ['grande-salle.webp', 'bibliotheque.webp', 'cour.webp']
-const launcherBackground = launcherBackgrounds[Math.floor(Math.random() * launcherBackgrounds.length)]
 
 function createWindow() {
 
     win = new BrowserWindow({
         width: 980,
         height: 552,
-        minWidth: 720,
-        minHeight: 406,
         icon: getPlatformIcon('SealCircle'),
         frame: false,
         webPreferences: {
@@ -252,8 +239,7 @@ function createWindow() {
     remoteMain.enable(win.webContents)
 
     const data = {
-        launcherVersion: app.getVersion(),
-        launcherBackground,
+        bkid: Math.floor((Math.random() * fs.readdirSync(path.join(__dirname, 'app', 'assets', 'images', 'backgrounds')).length)),
         lang: (str, placeHolders) => LangLoader.queryEJS(str, placeHolders)
     }
     Object.entries(data).forEach(([key, val]) => ejse.data(key, val))
@@ -353,16 +339,7 @@ function getPlatformIcon(filename){
     return path.join(__dirname, 'app', 'assets', 'images', `${filename}.${ext}`)
 }
 
-if (!app.requestSingleInstanceLock()) {
-    app.quit()
-} else {
-    app.on('ready', createWindow)
-    app.on('second-instance', () => {
-        if (!win) return
-        if (win.isMinimized()) win.restore()
-        win.focus()
-    })
-}
+app.on('ready', createWindow)
 app.on('ready', createMenu)
 
 app.on('window-all-closed', () => {

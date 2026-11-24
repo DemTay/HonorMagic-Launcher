@@ -42,13 +42,13 @@ if(!isDev){
         switch(arg){
             case 'checking-for-update':
                 loggerAutoUpdater.info('Checking for update..')
-                settingsUpdateTitle.textContent = Lang.queryJS('settings.updates.currentVersionTitle')
                 settingsUpdateButtonStatus(Lang.queryJS('uicore.autoUpdate.checkingForUpdateButton'), true)
                 break
             case 'update-available':
                 loggerAutoUpdater.info('New update available', info.version)
                 
-                if(info.downloadPage){
+                if(process.platform === 'darwin'){
+                    info.darwindownload = `https://github.com/dscalzi/HeliosLauncher/releases/download/v${info.version}/Helios-Launcher-setup-${info.version}${process.arch === 'arm64' ? '-arm64' : '-x64'}.dmg`
                     showUpdateUI(info)
                 }
                 
@@ -65,7 +65,7 @@ if(!isDev){
                 break
             case 'update-not-available':
                 loggerAutoUpdater.info('No new update found.')
-                populateSettingsUpdateInformation(null, 'latestVersionTitle')
+                settingsUpdateButtonStatus(Lang.queryJS('uicore.autoUpdate.checkForUpdatesButton'))
                 break
             case 'ready':
                 updateCheckListener = setInterval(() => {
@@ -74,8 +74,16 @@ if(!isDev){
                 ipcRenderer.send('autoUpdateAction', 'checkForUpdate')
                 break
             case 'realerror':
-                loggerAutoUpdater.error('Unable to check for or download an update.', info)
-                populateSettingsUpdateInformation(null, 'updateErrorTitle')
+                if(info != null && info.code != null){
+                    if(info.code === 'ERR_UPDATER_INVALID_RELEASE_FEED'){
+                        loggerAutoUpdater.info('No suitable releases found.')
+                    } else if(info.code === 'ERR_XML_MISSED_ELEMENT'){
+                        loggerAutoUpdater.info('No releases found.')
+                    } else {
+                        loggerAutoUpdater.error('Error during update check..', info)
+                        loggerAutoUpdater.debug('Error Code:', info.code)
+                    }
+                }
                 break
             default:
                 loggerAutoUpdater.info('Unknown argument', arg)
@@ -165,6 +173,21 @@ document.addEventListener('readystatechange', function () {
             })
         })
 
+    } else if(document.readyState === 'complete'){
+
+        //266.01
+        //170.8
+        //53.21
+        // Bind progress bar length to length of bot wrapper
+        //const targetWidth = document.getElementById("launch_content").getBoundingClientRect().width
+        //const targetWidth2 = document.getElementById("server_selection").getBoundingClientRect().width
+        //const targetWidth3 = document.getElementById("launch_button").getBoundingClientRect().width
+
+        document.getElementById('launch_details').style.maxWidth = 266.01
+        document.getElementById('launch_progress').style.width = 170.8
+        document.getElementById('launch_details_right').style.maxWidth = 170.8
+        document.getElementById('launch_progress_label').style.width = 53.21
+        
     }
 
 }, false)

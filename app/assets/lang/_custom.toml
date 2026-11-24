@@ -8,12 +8,11 @@ mediaGitHubURL = "https://honor-magic.fr/"
 mediaXURL = "https://twitter.com/"
 mediaInstagramURL = "https://www.instagram.com/"
 mediaYouTubeURL = "https://www.youtube.com/"
-mediaDiscordURL = "https://discord.gg/pHTJA44nt"
+mediaDiscordURL = "https://discord.gg/ejJm4Hjh9k"
 
 [ejs.settings]
-sourceGithubLink = "https://github.com/DemTay/HonorMagic-Launcher"
-supportLink = "https://github.com/DemTay/HonorMagic-Launcher/issues"
-releaseNotesLink = "https://github.com/DemTay/HonorMagic-Launcher/releases"
+sourceGithubLink = "https://github.com/DemTay/Launcher-Honor-Magic-1.12.2"
+supportLink = "https://github.com/DemTay/Launcher-Honor-Magic-1.12.2/issues"
 
 [ejs.welcome]
 welcomeHeader = "Bienvenue sur Honor&Magic"
