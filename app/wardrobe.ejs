@@ -1,0 +1,40 @@
+<section class="wardrobe" id="garde-robe" aria-label="Garde-robe" hidden inert>
+  <div class="wardrobe-library">
+    <div class="wardrobe-grid" aria-label="Skins"></div>
+    <div class="wardrobe-actions" hidden>
+      <button id="wardrobe-rename" class="wardrobe-action" type="button" hidden>Renommer</button>
+      <button id="wardrobe-delete" class="wardrobe-action remove" type="button" hidden>Supprimer</button>
+    </div>
+    <p class="wardrobe-feedback" role="status"></p>
+    <p class="wardrobe-feedback wardrobe-account-status" role="status"></p>
+  </div>
+  <div class="wardrobe-stage">
+    <div class="wardrobe-floor" aria-hidden="true"></div>
+    <canvas class="skin" id="wardrobe-skin" width="218" height="320" role="img" tabindex="0"></canvas>
+    <p class="skin-name wardrobe-name" aria-live="polite"></p>
+  </div>
+  <dialog class="wardrobe-dialog" id="wardrobe-add-dialog" aria-labelledby="wardrobe-add-title">
+    <form>
+      <h2 id="wardrobe-add-title">Ajouter un skin</h2>
+      <label>Fichier du skin<input name="skinFile" type="file" accept="image/png,.png" aria-describedby="wardrobe-file-formats" required autofocus></label>
+      <p id="wardrobe-file-formats" class="wardrobe-field-hint">PNG Minecraft de 64 × 64 ou 64 × 32 pixels.</p>
+      <label>Nom du skin<input name="skinName" type="text" maxlength="48" required></label>
+      <p class="wardrobe-add-error" role="status"></p>
+      <div class="wardrobe-actions"><button class="wardrobe-action" type="button">Annuler</button><button class="wardrobe-action primary" type="submit">Enregistrer</button></div>
+    </form>
+  </dialog>
+  <dialog class="wardrobe-dialog" id="wardrobe-rename-dialog">
+    <form method="dialog">
+      <h2>Renommer le skin</h2>
+      <label>Nouveau nom<input name="skinName" maxlength="48" required autofocus></label>
+      <p class="wardrobe-add-error" role="status"></p>
+      <div class="wardrobe-actions"><button class="wardrobe-action" value="cancel" formnovalidate>Annuler</button><button class="wardrobe-action primary" value="confirm">Enregistrer</button></div>
+    </form>
+  </dialog>
+  <dialog class="wardrobe-dialog" id="wardrobe-delete-dialog">
+    <form method="dialog">
+      <h2>Supprimer le skin</h2><p></p>
+      <div class="wardrobe-actions"><button class="wardrobe-action" value="cancel" autofocus>Annuler</button><button class="wardrobe-action remove" value="confirm">Supprimer</button></div>
+    </form>
+  </dialog>
+</section>

@@ -1,0 +1,554 @@
+/* Presentation for the existing settings view and its generated controls. */
+#settingsContainer {
+    --settings-text: #f8efe5;
+    --settings-muted: #c8baba;
+    --settings-gold: #efcc98;
+    --settings-line: #e4ba9338;
+    --settings-card: #382a338f;
+    --settings-input: #261e28;
+    --settings-logout: #b12c3b;
+    --settings-logout-hover: #c03646;
+    --settings-logout-active: #982432;
+    color: var(--settings-text);
+    background: #201a22;
+    color-scheme: dark;
+}
+
+#settingsContainerLeft {
+    flex: 0 0 clamp(156px, 23%, 264px);
+    padding: 24px clamp(12px, 1.7cqw, 26px) 18px;
+    border-right: 1px solid var(--settings-line);
+    background: linear-gradient(150deg, #342830, #231b24 74%);
+    overflow: auto;
+}
+
+#settingsNavHeader {
+    display: block;
+    height: auto;
+    margin: 0 8px 16px;
+}
+
+#settingsNavHeaderText,
+.settingsTabHeaderText {
+    font-family: 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -.035em;
+}
+
+#settingsNavHeaderText { font-size: 27px; }
+
+#settingsNavItemsContainer {
+    display: block;
+    height: auto;
+    flex: 1;
+    min-height: min-content;
+}
+
+#settingsNavItemsContent { height: 100%; }
+
+.settingsNavItem {
+    margin: 0 0 2px;
+    padding: 7px 10px;
+    min-height: 32px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: var(--settings-muted);
+}
+
+.settingsNavItem:is(:hover, :focus-visible, [selected]) {
+    color: var(--settings-gold);
+    border-color: var(--settings-line);
+    background: #ba8f7226;
+    text-shadow: none;
+}
+
+.settingsNavDivider { display: none; }
+
+#settingsNavContentBottom {
+    position: static;
+    margin-top: auto;
+    padding-top: 14px;
+}
+
+#settingsNavDone {
+    width: 100%;
+    min-height: 36px;
+    margin: 0;
+    border-radius: 999px;
+    background: var(--settings-gold);
+    color: #2d1c23;
+    text-align: center;
+    font-family: 'Avenir Medium';
+}
+
+#settingsNavDone:is(:hover, :focus, :active) {
+    text-shadow: none;
+    color: #2d1c23;
+    background: #f8ddba;
+}
+
+#settingsNavDone:disabled { color: #2d1c23; opacity: .48; }
+
+#settingsContainerRight {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+    background: radial-gradient(ellipse at 100% 0%, #392b34, transparent 68%), #221b24;
+}
+
+.settingsTab {
+    box-sizing: border-box;
+    padding: 29px clamp(16px, 3.3cqw, 52px);
+}
+
+.settingsTab::-webkit-scrollbar { width: 6px; }
+.settingsTab::-webkit-scrollbar-track { display: block; background: #211b23; }
+.settingsTab::-webkit-scrollbar-thumb { background: #b18a7280; box-shadow: none; }
+.settingsTab > :first-child { margin-top: 0; }
+.settingsTab > :last-child { margin-bottom: 8px; }
+.settingsTabHeader { gap: 6px; margin-bottom: 20px; }
+.settingsTabHeaderText { font-size: clamp(27px, 3.8cqw, 39px); }
+
+.settingsTabHeaderDesc,
+.settingsFieldDesc,
+.settingsFileSelDesc,
+#settingsMemoryDesc,
+#settingsJVMOptsDesc,
+#settingsShaderpackDesc {
+    color: var(--settings-muted);
+    font-size: 12px;
+    line-height: 1.45;
+    font-weight: 400;
+}
+
+.settingsTab > :is(.settingsFieldContainer, .settingsFileSelContainer, .settingsAuthAccountTypeContainer, .settingsSelServContainer, .settingsChangelogContainer, #settingsGameResolutionContainer, #settingsModsContainer, #settingsMemoryContainer, #settingsJVMOptsContainer, #settingsAboutCurrentContainer, #settingsUpdateStatusContainer) {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.settingsTab > :is(.settingsAuthAccountTypeContainer, .settingsSelServContainer, .settingsFileSelContainer, .settingsChangelogContainer, #settingsGameResolutionContainer, #settingsMemoryContainer, #settingsJVMOptsContainer, #settingsAboutCurrentContainer, #settingsUpdateStatusContainer),
+#settingsModsContainer > div {
+    border: 1px solid var(--settings-line);
+    border-radius: 9px;
+    background: var(--settings-card);
+}
+
+#settingsGameResolutionContainer,
+.settingsFieldContainer,
+.settingsFileSelContainer,
+#settingsMemoryContainer,
+#settingsJVMOptsContainer,
+#settingsModsContainer > div {
+    padding: 12px 15px;
+    box-sizing: border-box;
+}
+
+#settingsGameResolutionContainer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.settingsFieldContainer {
+    gap: 14px;
+    border-bottom-color: var(--settings-line);
+}
+
+.settingsFieldRight { flex-shrink: 0; }
+
+#settingsTabMinecraft #settingsGameResolutionContainer { border-radius: 9px 9px 0 0; }
+#settingsTabMinecraft .settingsFieldContainer {
+    border: 1px solid var(--settings-line);
+    border-top: 0;
+    background: var(--settings-card);
+}
+#settingsTabMinecraft .settingsFieldContainer:last-child { border-radius: 0 0 9px 9px; }
+
+#settingsContainer input:is([type=number], [type=text]) {
+    background: var(--settings-input);
+    border-color: var(--settings-line);
+    color: var(--settings-text);
+}
+#settingsContainer input:is([type=number], [type=text]):focus { border-color: var(--settings-gold); }
+#settingsContainer input[type=number][error] { border-color: #f19a93; color: #ffc6c0; }
+#settingsGameResolutionContent { gap: 7px; padding-top: 0; }
+#settingsGameResolutionCross { padding: 0 3px; color: var(--settings-muted); }
+#settingsGameResolutionContent input { width: 62px; padding: 6px; box-sizing: border-box; }
+
+#settingsContainer .toggleSwitchSlider { background: var(--settings-input); border-color: #977d7480; }
+#settingsContainer input:checked + .toggleSwitchSlider { background: #ad825d; border-color: #c69c74; }
+#settingsContainer .toggleSwitchSlider:before { background-color: #fae5c9; }
+#settingsContainer .toggleSwitch :disabled + .toggleSwitchSlider { opacity: .5; }
+#settingsContainer :focus-visible { outline: 1px solid var(--settings-gold); outline-offset: 2px; }
+#settingsContainer .toggleSwitch input:focus-visible + .toggleSwitchSlider { outline: 1px solid var(--settings-gold); outline-offset: 3px; }
+
+.settingsFileSelActions,
+.settingsFileSelDesc,
+#settingsJVMOptsContent,
+#settingsJVMOptsDesc { width: 100%; }
+.settingsFileSelActions input,
+#settingsJVMOptsVal { min-width: 0; box-sizing: border-box; }
+.settingsFileSelDesc,
+#settingsJVMOptsDesc,
+#settingsMemoryDesc { margin: 10px 0 0; }
+.settingsFileSelIcon { color: var(--settings-gold); background: #674f46; }
+.settingsFileSelSVG { fill: currentColor; }
+.settingsFileSelButton { padding: 0 10px; border: 1px solid var(--settings-line); background: #483640; color: var(--settings-text); }
+
+.settingsAuthAccountTypeContainer { padding: 0 14px; margin-bottom: 12px; }
+.settingsAuthAccountTypeHeader { gap: 10px; border-bottom-color: var(--settings-line); margin-bottom: 10px; }
+.settingsAuthAccountTypeHeaderLeft { align-items: center; gap: 9px; }
+.settingsCurrentAccounts { margin-bottom: 12px; }
+.settingsAuthAccount { border-color: var(--settings-line); border-radius: 7px; background: var(--settings-input); }
+
+#settingsContainer :is(.settingsAddAuthAccount, .settingsAuthAccountSelect, .settingsAuthAccountLogOut, .settingsDropinRemoveButton, #settingsDropinFileSystemButton, #settingsShaderpackButton, .settingsAboutButton, #settingsUpdateActionButton) {
+    border: 1px solid var(--settings-button-border, var(--settings-line));
+    border-radius: 999px;
+    padding: 6px 10px;
+    background: var(--settings-button-background, var(--settings-input));
+    color: var(--settings-button-color, var(--settings-gold));
+    font-size: 12px;
+    text-shadow: none;
+}
+#settingsContainer :is(.settingsAddAuthAccount, .settingsAuthAccountSelect, .settingsDropinRemoveButton, #settingsDropinFileSystemButton, #settingsShaderpackButton, .settingsAboutButton, #settingsUpdateActionButton):hover {
+    border-color: var(--settings-gold);
+}
+#settingsContainer .settingsAuthAccountLogOut {
+    --settings-button-border: transparent;
+    --settings-button-background: var(--settings-logout);
+    --settings-button-color: #fff;
+}
+#settingsContainer .settingsAuthAccountLogOut:hover { --settings-button-background: var(--settings-logout-hover); }
+#settingsContainer .settingsAuthAccountLogOut:active { --settings-button-background: var(--settings-logout-active); }
+
+#settingsLogoutDialog {
+    width: min(27rem, calc(100% - 2rem));
+    max-height: calc(100% - 2rem);
+    margin: auto;
+    padding: clamp(1rem, 2.6cqw, 1.6rem);
+    padding-bottom: 1rem;
+    border: 1px solid #d0ad837a;
+    border-radius: 14px;
+    background: #28202b;
+    color: var(--settings-text);
+    font: 13px/1.55 Inter, system-ui, sans-serif;
+    box-shadow: 0 12px 45px #120d1690;
+}
+#settingsLogoutDialog::backdrop {
+    background: #120d17a8;
+    backdrop-filter: blur(4px);
+}
+#settingsLogoutTitle {
+    margin: 0 0 0.4em;
+    color: var(--settings-gold);
+    text-align: center;
+    font: 400 27px/1.16 Palace, Georgia, serif;
+}
+#settingsLogoutDescription {
+    margin: 0;
+    color: var(--settings-muted);
+    text-align: justify;
+}
+.settings-logout-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 20px 0 0;
+}
+.settings-logout-actions button {
+    min-height: 36px;
+    padding: 0.45em 1em;
+    border: 1px solid var(--settings-line);
+    border-radius: 999px;
+    background: #352937;
+    color: var(--settings-text);
+    font: 600 12px/1.25 Inter, system-ui, sans-serif;
+    cursor: pointer;
+    transition: background-color 150ms ease;
+}
+.settings-logout-actions button:hover { background: #443546; }
+.settings-logout-actions .settings-logout-confirm {
+    border-color: transparent;
+    background: var(--settings-logout);
+    color: #fff;
+}
+.settings-logout-actions .settings-logout-confirm:hover { background: var(--settings-logout-hover); }
+.settings-logout-actions .settings-logout-confirm:active { background: var(--settings-logout-active); }
+
+#settingsContainer .settingsAuthAccountSelect[selected] { background: #614e3f; }
+#settingsContainer :is(#settingsDropinFileSystemButton, #settingsShaderpackButton)[drag] { border-style: dashed; border-color: var(--settings-gold); }
+#settingsContainer #settingsUpdateActionButton:disabled { opacity: .52; }
+
+#settingsModsContainer > div { margin-bottom: 10px; }
+.settingsSubMod { border-left-color: var(--settings-line); }
+.settingsModsHeader,
+#settingsMemoryTitle { border-bottom-color: var(--settings-line); }
+.settingsSelectSelected,
+.settingsSelectOptions,
+.settingsSelectOptions div { border-color: var(--settings-line); background: var(--settings-input); }
+#settingsContainer .rangeSlider { background: #664d57; }
+#settingsContainer .rangeSliderBar { background: #b98c66; }
+#settingsContainer .rangeSliderTrack { background: var(--settings-gold); }
+
+.settingsSelServContent { padding-left: 10px; }
+.settingsSelServContent .serverListingImg { border-color: var(--settings-line); border-radius: 7px; }
+.settingsSelServContent .serverListingDescription,
+.settingsSelServContent .serverListingRevision { color: var(--settings-muted); }
+.settingsAuthAccount:focus-within :is(.settingsAuthAccountSelect, .settingsAuthAccountLogOut) { opacity: 1; }
+
+.hm-settings {
+    inset: 7.6em 3.25em calc(var(--dock-height) + 1.55em);
+    font:
+        var(--launcher-unit) Inter,
+        system-ui,
+        sans-serif;
+}
+.hm-settings #settingsContainer {
+    --settings-copy: clamp(10px, calc(1.12 * var(--launcher-unit)), 13px);
+    --settings-title: clamp(11px, calc(1.24 * var(--launcher-unit)), 15px);
+    --settings-card: #392d37a6;
+    --settings-input: #231b24;
+    border: 1px solid var(--settings-line);
+    border-radius: 1.25em;
+    background: #221b24db;
+    overflow: hidden;
+}
+.hm-settings #settingsContainerLeft {
+    flex: 0 0 22%;
+    width: auto;
+    padding: 1.55em 1.4em 1.35em;
+    background: #372b35a3;
+}
+.hm-settings #settingsNavHeader {
+    margin: 0 0.55em 0.85em;
+}
+.hm-settings #settingsNavHeaderText {
+    font:
+        400 clamp(15px, calc(2.12 * var(--launcher-unit)), 24px) / 1.15 Palace,
+        Georgia,
+        serif;
+    letter-spacing: 0;
+}
+.hm-settings .settingsNavItem {
+    min-height: 0;
+    font:
+        500 var(--settings-copy) / 1.3 Inter,
+        system-ui,
+        sans-serif;
+    padding: 0.52em 0.7em;
+    border-radius: 0.67em;
+    white-space: nowrap;
+}
+.hm-settings #settingsNavContentBottom {
+    padding-top: 0.9em;
+}
+.hm-settings #settingsNavDone {
+    min-height: 2.55em;
+    padding: 0.3em 0.75em;
+    font:
+        650 var(--settings-copy) / 1.25 Inter,
+        system-ui,
+        sans-serif;
+}
+.hm-settings #settingsContainerRight {
+    background: none;
+}
+.hm-settings .settingsTab {
+    padding: 1.65em 2.3em;
+}
+.hm-settings .settingsTabHeader {
+    gap: 0.4em;
+    margin-bottom: 1.25em;
+}
+.hm-settings .settingsTabHeaderText {
+    font:
+        400 clamp(17px, calc(2.42 * var(--launcher-unit)), 28px) / 1.12 Palace,
+        Georgia,
+        serif;
+    letter-spacing: 0;
+}
+.hm-settings
+    :is(
+        .settingsTabHeaderDesc,
+        .settingsFieldDesc,
+        .settingsFileSelDesc,
+        #settingsMemoryDesc,
+        #settingsJVMOptsDesc,
+        #settingsShaderpackDesc
+    ) {
+    font:
+        400 var(--settings-copy) / 1.4 Inter,
+        system-ui,
+        sans-serif;
+}
+.hm-settings
+    :is(
+        .settingsFieldTitle,
+        .settingsFileSelTitle,
+        .settingsAuthAccountTypeHeaderLeft,
+        .settingsModsHeader,
+        #settingsMemoryTitle,
+        #settingsJVMOptsTitle
+    ) {
+    font:
+        600 var(--settings-title) / 1.35 Inter,
+        system-ui,
+        sans-serif;
+}
+.hm-settings
+    :is(
+        #settingsGameResolutionContainer,
+        .settingsFieldContainer,
+        .settingsFileSelContainer,
+        #settingsMemoryContainer,
+        #settingsJVMOptsContainer,
+        #settingsModsContainer > div
+    ) {
+    padding: 0.85em 1.2em;
+}
+.hm-settings .settingsFieldContainer {
+    gap: 1em;
+}
+.hm-settings .settingsFieldDesc {
+    margin-top: 0.3em;
+}
+.hm-settings #settingsGameResolutionContainer {
+    gap: 0.8em;
+}
+.hm-settings #settingsGameResolutionContent {
+    gap: 0.45em;
+}
+.hm-settings #settingsGameResolutionContent input {
+    width: 5em;
+    padding: 0.35em 0.45em;
+}
+.hm-settings #settingsContainer input:is([type='number'], [type='text']) {
+    font:
+        400 var(--settings-copy) / 1.3 Inter,
+        system-ui,
+        sans-serif;
+}
+.hm-settings .toggleSwitch {
+    width: 3.45em;
+    height: 1.8em;
+}
+.hm-settings .toggleSwitchSlider::before {
+    width: 1.12em;
+    height: 1.12em;
+    left: 0.27em;
+    bottom: 0.24em;
+}
+.hm-settings input:checked + .toggleSwitchSlider::before {
+    transform: translateX(1.55em);
+}
+.hm-settings .settingsFileSelVal {
+    height: 2.4em;
+}
+.hm-settings .settingsFileSelButton {
+    font:
+        500 var(--settings-copy) / 1.25 Inter,
+        system-ui,
+        sans-serif;
+    padding-inline: 0.65em;
+}
+.hm-settings .settingsFileSelIcon {
+    padding: 0.35em;
+}
+.hm-settings .settingsFileSelIcon svg {
+    width: 1.55em !important;
+    height: 1.55em !important;
+}
+.hm-settings .settingsAuthAccountTypeHeaderLeft svg {
+    width: 1.7em !important;
+    height: 1.7em !important;
+}
+.hm-settings .settingsFileSelContainer {
+    margin-block: 1em;
+}
+.hm-settings :is(.settingsFileSelDesc, #settingsJVMOptsDesc, #settingsMemoryDesc) {
+    margin-top: 0.7em;
+}
+.hm-settings
+    #settingsContainer
+    :is(
+        .settingsAddAuthAccount,
+        .settingsAuthAccountSelect,
+        .settingsAuthAccountLogOut,
+        .settingsDropinRemoveButton,
+        #settingsDropinFileSystemButton,
+        #settingsShaderpackButton,
+        .settingsAboutButton,
+        #settingsUpdateActionButton
+    ) {
+    font:
+        500 var(--settings-copy) / 1.25 Inter,
+        system-ui,
+        sans-serif;
+    min-height: 2.35em;
+    padding: 0.35em 0.65em;
+}
+.hm-settings #settingsContainer :is(#settingsDropinFileSystemButton, #settingsShaderpackButton) {
+    display: grid;
+    place-items: center;
+    height: 3.8em;
+    margin: 0 0 0.35em;
+    padding: 0;
+    border: 1px dashed #e1bd8a9c;
+    border-radius: 0.65em;
+    background: #231925cb;
+    color: var(--settings-gold);
+    text-shadow: none;
+}
+.hm-settings
+    #settingsContainer
+    :is(#settingsDropinFileSystemButton, #settingsShaderpackButton):is(:hover, :focus-visible, [drag]) {
+    border-color: var(--settings-gold);
+    background: #40303dcc;
+}
+.hm-settings :is(#settingsDropinFileSystemButton, #settingsShaderpackButton) svg {
+    width: 1.8em;
+    height: 1.8em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    pointer-events: none;
+}
+
+.hm-settings #settingsShaderpackWrapper {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.7em;
+}
+.hm-settings #settingsContainer #settingsShaderpackButton {
+    width: 100%;
+    margin: 0;
+}
+.hm-settings #settingsShaderpackWrapper .settingsSelectContainer {
+    width: 100%;
+}
+.hm-settings #settingsShadersSelected {
+    font:
+        500 var(--settings-copy) / 1.35 Inter,
+        system-ui,
+        sans-serif;
+    padding: 0.65em 2.6em 0.65em 0.9em;
+}
+
+.hm-settings #settingsDropinRefreshNote {
+    margin: 0 0 0.65em;
+    color: var(--settings-muted);
+    font:
+        400 var(--settings-copy) / 1.4 Inter,
+        system-ui,
+        sans-serif;
+}
+.hm-settings #settingsShaderpackDesc {
+    width: 100%;
+    text-align: justify;
+}
+.hm-settings .settingsSelServContent .serverListingImg {
+    border: 0;
+    border-radius: 0;
+}
