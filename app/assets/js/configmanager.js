@@ -5,11 +5,9 @@ const path = require('path')
 
 const logger = LoggerUtil.getLogger('ConfigManager')
 
-const sysRoot = process.env.APPDATA || (process.platform === 'darwin' ? path.join(os.homedir(), 'Library', 'Application Support') : os.homedir())
+const sysRoot = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + '/Library/Application Support' : process.env.HOME)
 
-const paths = require('./datapaths')(sysRoot)
-const dataPath = paths.root
-exports.getSkinDirectory = () => paths.skins
+const dataPath = path.join(sysRoot, '.helioslauncher')
 
 const launcherDir = require('@electron/remote').app.getPath('userData')
 
@@ -42,7 +40,7 @@ exports.setDataDirectory = function(dataDirectory){
 }
 
 const configPath = path.join(exports.getLauncherDirectory(), 'config.json')
-const configPathLEGACY = [paths.legacy, paths.root, paths.recovered].map(dir => path.join(dir, 'config.json')).find(file => fs.existsSync(file)) || path.join(paths.legacy, 'config.json')
+const configPathLEGACY = path.join(dataPath, 'config.json')
 const firstLaunch = !fs.existsSync(configPath) && !fs.existsSync(configPathLEGACY)
 
 exports.getAbsoluteMinRAM = function(ram){
@@ -96,6 +94,7 @@ const DEFAULT_CONFIG = {
         content: null,
         dismissed: false
     },
+    clientToken: null,
     selectedServer: null, // Resolved
     selectedAccount: null,
     authenticationDatabase: {},
@@ -111,9 +110,7 @@ let config = null
  * Save the current configuration to a file.
  */
 exports.save = function(){
-    const temporary = configPath + '.tmp'
-    fs.writeFileSync(temporary, JSON.stringify(config, null, 4), { encoding: 'utf8', mode: 0o600 })
-    fs.renameSync(temporary, configPath)
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 4), 'UTF-8')
 }
 
 /**
@@ -132,8 +129,8 @@ exports.load = function(){
             fs.moveSync(configPathLEGACY, configPath)
         } else {
             doLoad = false
-            config = structuredClone(DEFAULT_CONFIG)
-            if (fs.existsSync(paths.legacy)) config.settings.launcher.dataDirectory = paths.legacy
+            config = DEFAULT_CONFIG
+            exports.save()
         }
     }
     if(doLoad){
@@ -146,34 +143,14 @@ exports.load = function(){
             logger.info('Configuration file contains malformed JSON or is corrupt.')
             logger.info('Generating a new configuration file.')
             fs.ensureDirSync(path.join(configPath, '..'))
-            config = structuredClone(DEFAULT_CONFIG)
-            if (fs.existsSync(paths.legacy)) config.settings.launcher.dataDirectory = paths.legacy
+            config = DEFAULT_CONFIG
+            exports.save()
         }
         if(doValidate){
-            const missingDirectory = !config.settings?.launcher?.dataDirectory
-            config = validateKeySet(structuredClone(DEFAULT_CONFIG), config)
-            if (missingDirectory && fs.existsSync(paths.legacy)) config.settings.launcher.dataDirectory = paths.legacy
+            config = validateKeySet(DEFAULT_CONFIG, config)
+            exports.save()
         }
     }
-    // Drop legacy accounts and keep the existing Microsoft sessions.
-    delete config.clientToken
-    config.authenticationDatabase = Object.fromEntries(
-        Object.entries(config.authenticationDatabase ?? {}).filter(([, account]) => account?.type === 'microsoft')
-    )
-    if(!Object.hasOwn(config.authenticationDatabase, config.selectedAccount)){
-        config.selectedAccount = Object.keys(config.authenticationDatabase)[0] ?? null
-    }
-    try {
-        paths.migrate(config)
-    } catch (error) {
-        logger.warn('Migration différée. Le launcher utilise les chemins existants.', error)
-    }
-    try {
-        fs.ensureDirSync(paths.skins)
-    } catch (error) {
-        logger.warn('Le répertoire des skins est indisponible.', error)
-    }
-    exports.save()
     logger.info('Successfully Loaded')
 }
 
@@ -279,13 +256,32 @@ exports.getInstanceDirectory = function(){
 }
 
 /**
+ * Retrieve the launcher's Client Token.
+ * There is no default client token.
+ * 
+ * @returns {string} The launcher's Client Token.
+ */
+exports.getClientToken = function(){
+    return config.clientToken
+}
+
+/**
+ * Set the launcher's Client Token.
+ * 
+ * @param {string} clientToken The launcher's new Client Token.
+ */
+exports.setClientToken = function(clientToken){
+    config.clientToken = clientToken
+}
+
+/**
  * Retrieve the ID of the selected serverpack.
  * 
  * @param {boolean} def Optional. If true, the default value will be returned.
  * @returns {string} The ID of the selected serverpack.
  */
 exports.getSelectedServer = function(def = false){
-    return !def ? config.selectedServer : DEFAULT_CONFIG.selectedServer
+    return !def ? config.selectedServer : DEFAULT_CONFIG.clientToken
 }
 
 /**
@@ -304,6 +300,53 @@ exports.setSelectedServer = function(serverID){
  */
 exports.getAuthAccounts = function(){
     return config.authenticationDatabase
+}
+
+/**
+ * Returns the authenticated account with the given uuid. Value may
+ * be null.
+ * 
+ * @param {string} uuid The uuid of the authenticated account.
+ * @returns {Object} The authenticated account with the given uuid.
+ */
+exports.getAuthAccount = function(uuid){
+    return config.authenticationDatabase[uuid]
+}
+
+/**
+ * Update the access token of an authenticated mojang account.
+ * 
+ * @param {string} uuid The uuid of the authenticated account.
+ * @param {string} accessToken The new Access Token.
+ * 
+ * @returns {Object} The authenticated account object created by this action.
+ */
+exports.updateMojangAuthAccount = function(uuid, accessToken){
+    config.authenticationDatabase[uuid].accessToken = accessToken
+    config.authenticationDatabase[uuid].type = 'mojang' // For gradual conversion.
+    return config.authenticationDatabase[uuid]
+}
+
+/**
+ * Adds an authenticated mojang account to the database to be stored.
+ * 
+ * @param {string} uuid The uuid of the authenticated account.
+ * @param {string} accessToken The accessToken of the authenticated account.
+ * @param {string} username The username (usually email) of the authenticated account.
+ * @param {string} displayName The in game name of the authenticated account.
+ * 
+ * @returns {Object} The authenticated account object created by this action.
+ */
+exports.addMojangAuthAccount = function(uuid, accessToken, username, displayName){
+    config.selectedAccount = uuid
+    config.authenticationDatabase[uuid] = {
+        type: 'mojang',
+        accessToken,
+        username: username.trim(),
+        uuid: uuid.trim(),
+        displayName: displayName.trim()
+    }
+    return config.authenticationDatabase[uuid]
 }
 
 /**
@@ -376,6 +419,7 @@ exports.removeAuthAccount = function(uuid){
                 config.selectedAccount = keys[0]
             } else {
                 config.selectedAccount = null
+                config.clientToken = null
             }
         }
         return true
