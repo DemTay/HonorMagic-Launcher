@@ -1,0 +1,922 @@
+@font-face {
+    font-family: Inter;
+    src: url('../images/interface/inter.woff2') format('woff2');
+    font-display: swap;
+}
+@font-face {
+    font-family: Palace;
+    src: local('Palatino Linotype'), local('Book Antiqua'), local('Georgia');
+}
+#main {
+    container-type: inline-size;
+}
+body {
+    overflow: hidden;
+}
+#launcherViewport {
+    position: relative;
+    width: 100%;
+    height: 100dvh;
+    container-type: inline-size;
+    --launcher-unit: clamp(7px, min(1vw, 1.775dvh), 13px);
+    --dock-height: min(calc(8.9 * var(--launcher-unit)), 104px);
+    --titlebar-top: calc(1.6 * var(--launcher-unit));
+    --titlebar-row: clamp(27px, calc(3.65 * var(--launcher-unit)), 42px);
+    --titlebar-edge: clamp(10px, calc(2.4 * var(--launcher-unit)), 30px);
+    --window-action-size: clamp(24px, calc(3.25 * var(--launcher-unit)), 36px);
+    --window-action-gap: 3px;
+    --window-action-inset: var(--launcher-unit);
+    --window-dock-width: calc(3 * var(--window-action-size) + 2 * var(--window-action-gap) + var(--window-action-inset) + 1px);
+}
+.hm-app *,
+.hm-settings * {
+    box-sizing: border-box;
+}
+.hm-app {
+    --ink: #f7f0e6;
+    --muted: #c2b6b2;
+    --gold: #efcc98;
+    --base: #18151b;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    height: 100%;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) var(--dock-height);
+    background: var(--base);
+    color: var(--ink);
+    font:
+        var(--launcher-unit) Inter,
+        system-ui,
+        sans-serif;
+}
+.hm-app svg {
+    width: 1.65em;
+    height: 1.65em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.65;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.hero {
+    position: relative;
+    min-height: 0;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.scenes,
+.scene {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+}
+.scenes {
+    z-index: -2;
+}
+.scene img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 51%;
+    display: block;
+}
+.scene[data-scene='cour'] img {
+    object-position: center 45%;
+}
+.hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+        linear-gradient(180deg, #141017d9 0%, #17121a49 20%, transparent 40%),
+        linear-gradient(0deg, #17141bf5, #1a141cab 15%, transparent 56%),
+        linear-gradient(90deg, #17141b49, transparent 57%);
+    pointer-events: none;
+}
+.top {
+    display: flex;
+    align-items: center;
+    gap: 1.5em;
+    padding: 1.6em 2.75em 0 3.25em;
+}
+.shortcuts {
+    display: flex;
+    align-items: center;
+    flex: none;
+    gap: 0.6em;
+}
+.shortcut {
+    width: 3.65em;
+    height: 3.65em;
+    display: grid;
+    place-items: center;
+    border: 1px solid #f4d4b73c;
+    border-radius: 50%;
+    background: #2119229c;
+    color: var(--ink);
+}
+.shortcut img {
+    width: 1.65em;
+    display: block;
+}
+.dock {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 1.5em;
+    padding: 0 3.25em;
+    border-top: 1px solid #57434a;
+    background: linear-gradient(105deg, #211a22, #19151a 61%);
+}
+.online {
+    display: flex;
+    align-items: center;
+    gap: 0.57em;
+    font-weight: 700;
+    font-size: 1.24em;
+    white-space: nowrap;
+}
+.dot {
+    width: 0.59em;
+    height: 0.59em;
+    border-radius: 50%;
+    background: #83d797;
+    box-shadow: 0 0 0.9em #83d79745;
+}
+.launch {
+    display: grid;
+    justify-items: center;
+    gap: 0.56em;
+}
+.players,
+.version {
+    color: var(--muted);
+    font-size: 1.11em;
+    line-height: 1.35;
+    white-space: nowrap;
+}
+.version {
+    justify-self: end;
+    font-variant-numeric: tabular-nums;
+}
+.play {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8em;
+    min-width: 15.8em;
+    height: 4.45em;
+    border-radius: 99px;
+    background: var(--gold);
+    color: #2c1b21;
+}
+.play b {
+    font-size: 1.48em;
+}
+.play svg {
+    width: 1.25em;
+    height: 1.25em;
+    fill: currentColor;
+    stroke: none;
+}
+.top {
+    z-index: 2;
+}
+.shirt {
+    padding: 0;
+    font: inherit;
+}
+.fitting {
+    position: absolute;
+    inset: calc(5.8 * var(--launcher-unit)) 0 0;
+    font-size: clamp(7px, min(1vw, 1.775dvh), 16px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.65em;
+}
+.model {
+    position: relative;
+    width: 20em;
+    height: 37.5em;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 2.7em;
+}
+.model::before {
+    content: '';
+    position: absolute;
+    left: -0.8em;
+    right: -0.8em;
+    bottom: 3.15em;
+    height: 4.1em;
+    border-radius: 50%;
+    background: #100c16a8;
+    filter: blur(0.95em);
+}
+.model::after {
+    content: '';
+    position: absolute;
+    inset: 2.2em -7.5em 3.3em;
+    z-index: -1;
+    background: radial-gradient(ellipse at center, #1c15208c, transparent 67%);
+    pointer-events: none;
+}
+.skin {
+    position: absolute;
+    bottom: 3.05em;
+    width: 22em;
+    height: auto;
+    aspect-ratio: 218 / 320;
+    max-height: 32.5em;
+    object-fit: contain;
+    filter: drop-shadow(0 0 0.85em #180f1fbd);
+}
+.skin-name {
+    position: absolute;
+    bottom: 1.5em;
+    white-space: nowrap;
+    font-size: 1.14em;
+    font-weight: 650;
+    color: #f5debf;
+    letter-spacing: 0.02em;
+    text-shadow: 0 1px 6px #130c18;
+}
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.95em;
+    flex-shrink: 0;
+    color: #eae6dc;
+    text-decoration: none;
+}
+.brand img {
+    display: block;
+    width: 3.85em;
+    height: 3.85em;
+    object-fit: contain;
+}
+.brand > span {
+    font:
+        400 1.72em/1.08 Palace,
+        Georgia,
+        serif;
+    letter-spacing: 0.015em;
+    white-space: nowrap;
+    text-shadow: 0 1px 6px #151018;
+}
+.brand i {
+    font-weight: 400;
+    color: #c5a36b;
+    font-size: 0.85em;
+}
+.brand small {
+    display: block;
+    font:
+        700 0.46em/1.1 Inter,
+        system-ui,
+        sans-serif;
+    letter-spacing: 0.25em;
+    color: #ead5aa;
+    margin-top: 0.35em;
+}
+.skin {
+    cursor: grab;
+    touch-action: none;
+}
+.skin.dragging {
+    cursor: grabbing;
+}
+.skin:focus-visible {
+    outline: 1px solid #efcc9890;
+    outline-offset: 0.4em;
+    border-radius: 1em;
+}
+.shortcut.shirt {
+    cursor: pointer;
+}
+.shortcut[aria-expanded='true'] {
+    color: var(--gold);
+    border-color: #e6bd8090;
+    background: #392a35;
+}
+.wardrobe[hidden],
+.wardrobe [hidden] {
+    display: none !important;
+}
+.wardrobe {
+    position: absolute;
+    inset: 7.6em 3.25em 1.55em;
+    max-width: 1440px;
+    margin-inline: auto;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    gap: 3.1em;
+}
+.hero:has(.wardrobe:not([hidden])) .fitting {
+    visibility: hidden;
+    opacity: 0;
+}
+.fitting {
+    transition: opacity 200ms ease, visibility 200ms;
+}
+.wardrobe {
+    transition: opacity 220ms ease, transform 220ms ease, display 220ms allow-discrete;
+}
+.wardrobe[hidden] {
+    opacity: 0;
+    transform: translateY(5px);
+    pointer-events: none;
+}
+@starting-style {
+    .wardrobe:not([hidden]) {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+}
+.hero:has(.wardrobe:not([hidden]))::after {
+    background:
+        linear-gradient(180deg, #17131ae0, #17131a46 34%, #17131ae8),
+        linear-gradient(90deg, #19141bb2, #19141b25 75%);
+}
+.wardrobe-stage {
+    --floor-height: 5.6em;
+    --floor-center: 5.7em;
+    --skin-height: min(32em, calc(100% - 3em));
+    min-width: 0;
+    width: min(100%, 38em);
+    justify-self: center;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    justify-items: center;
+    align-items: end;
+    position: relative;
+    isolation: isolate;
+    padding-bottom: 0.25em;
+}
+.wardrobe-floor {
+    position: absolute;
+    z-index: -1;
+    left: 5%;
+    right: 5%;
+    bottom: calc(var(--floor-center) - var(--floor-height) / 2);
+    height: var(--floor-height);
+    border-radius: 50%;
+    border: 1px solid #b794676f;
+    background: radial-gradient(ellipse, #a07a4e75, #4633439e 52%, #261e28e8 78%);
+    box-shadow:
+        0 0.65em 0 -0.13em #241b25,
+        0 1.15em 1.7em #09070bc9,
+        inset 0 0 0 0.5em #221a25b3;
+    pointer-events: none;
+}
+.wardrobe-floor::before,
+.wardrobe-floor::after {
+    content: '';
+    position: absolute;
+    inset: 0.9em 3em;
+    border: 1px solid #d9b07952;
+    border-radius: 50%;
+}
+.wardrobe-floor::after {
+    inset: 1.4em 6em;
+    border-style: dashed;
+}
+.wardrobe-stage .skin {
+    left: 50%;
+    bottom: calc(var(--floor-center) - var(--skin-height) * 0.1);
+    transform: translateX(-50%);
+    width: auto;
+    max-width: 100%;
+    height: var(--skin-height);
+    max-height: none;
+}
+.wardrobe-name {
+    grid-row: 2;
+    position: relative;
+    bottom: auto;
+    min-height: 1.35em;
+    line-height: 1.35;
+    margin: 0 0 0.15em;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.wardrobe-library {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-block: 0.35em;
+}
+
+.wardrobe-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.7em;
+    align-content: start;
+    min-height: 0;
+    overflow: auto;
+}
+.wardrobe-grid::-webkit-scrollbar { width: 10px; }
+.wardrobe-grid::-webkit-scrollbar-thumb { border-radius: 99px; background: #92735f; }
+.wardrobe-card {
+    min-width: 0;
+    position: relative;
+}
+.wardrobe-select {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    width: 100%;
+    height: 11.65em;
+    justify-items: center;
+    padding: 0 0.4em 0.63em;
+    overflow: hidden;
+    border-radius: 1.1em;
+    border: 1px solid #eed9bf45;
+    background: radial-gradient(ellipse at 50% 30%, #5c4355c9, #332938ec 68%);
+    color: #f1e5dc;
+    cursor: pointer;
+    font: inherit;
+}
+.wardrobe-select[aria-pressed='true'] {
+    border-color: #e4b780;
+    background: radial-gradient(ellipse at 50% 30%, #8b634e80, #483245 75%);
+    box-shadow: inset 0 0 0 1px #e4b78042;
+}
+.wardrobe-select canvas {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: contain;
+}
+.wardrobe-select span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.08em;
+    font-weight: 600;
+}
+.wardrobe-star {
+    position: absolute;
+    top: 0.26em;
+    right: 0.26em;
+    width: 2.15em;
+    height: 2.15em;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #fff3de;
+    font: inherit;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 120ms ease;
+    filter: drop-shadow(0 1px 2px #1a1018);
+}
+.wardrobe-card:hover .wardrobe-star,
+.wardrobe-card:has(:focus-visible) .wardrobe-star {
+    opacity: 1;
+}
+@media (pointer: coarse) {
+    .wardrobe-star {
+        opacity: 1;
+    }
+}
+.wardrobe-star svg {
+    width: 1.25em;
+    height: 1.25em;
+}
+.wardrobe-star[aria-pressed='true'] {
+    color: #f3cb86;
+}
+.wardrobe-star[aria-pressed='true'] svg {
+    fill: currentColor;
+}
+.wardrobe-actions {
+    flex: none;
+    display: grid;
+    gap: 0.5em;
+    margin-top: 0.8em;
+}
+.wardrobe-action {
+    min-height: 2.45em;
+    border-radius: 99px;
+    border: 1px solid #ead0b548;
+    background: #332835;
+    color: #f5e8dd;
+    font:
+        600 1.12em Inter,
+        system-ui,
+        sans-serif;
+    cursor: pointer;
+}
+.wardrobe-action.primary {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #2c1b21;
+}
+.wardrobe-action.remove {
+    color: #f4b9b6;
+    background: #43283362;
+    border-color: #d68b8757;
+}
+.wardrobe button:hover {
+    filter: brightness(1.14);
+}
+.wardrobe button:focus-visible,
+.shortcut.shirt:focus-visible {
+    outline: 2px solid #f6cb8c;
+    outline-offset: -2px;
+}
+.wardrobe-feedback {
+    flex: none;
+    color: #f0caae;
+    font-size: 1.06em;
+    margin: 0.55em 0 0;
+}
+.wardrobe-feedback:empty {
+    display: none;
+}
+.wardrobe-add {
+    display: grid;
+    grid-template-rows: 1fr;
+    place-items: center;
+    border: 1px dashed #e1bd8a9c;
+    background: #231925cb;
+    color: var(--gold);
+}
+.wardrobe-add svg {
+    width: 2.45em;
+    height: 2.45em;
+    stroke-width: 1.5;
+}
+.wardrobe-add:hover,
+.wardrobe-add:focus-visible {
+    background: #40303dcc;
+    border-color: var(--gold);
+}
+.wardrobe-dialog {
+    width: min(34em, 88%);
+    border: 1px solid #d0ad837a;
+    border-radius: 1.3em;
+    padding: 1.6em;
+    background: #28202b;
+    color: var(--ink);
+    font: inherit;
+    box-shadow: 0 1em 4em #120d1690;
+}
+.wardrobe-dialog::backdrop {
+    background: #120d17a8;
+}
+.wardrobe-dialog h2 {
+    font:
+        400 2.15em Palace,
+        Georgia,
+        serif;
+    margin: 0 0 0.55em;
+}
+.wardrobe-dialog p,
+.wardrobe-dialog label {
+    font-size: 1.28em;
+}
+.wardrobe-dialog label {
+    display: grid;
+    gap: 0.6em;
+}
+.wardrobe-dialog input {
+    width: 100%;
+    background: #1c1720;
+    border: 1px solid #824f56;
+    border-radius: 0.55em;
+    color: var(--ink);
+    font: inherit;
+    padding: 0.64em;
+}
+.wardrobe-dialog .wardrobe-actions {
+    grid-template-columns: 1fr 1fr;
+    margin-top: 1.45em;
+}
+.wardrobe-dialog input[type='file'] {
+    padding: 0.36em;
+    color: #e7d8cf;
+}
+.wardrobe-dialog input[type='file']::file-selector-button {
+    border: 1px solid #ead0b548;
+    border-radius: 99px;
+    background: #473648;
+    color: var(--ink);
+    font: inherit;
+    padding: 0.42em 0.72em;
+    margin-inline-end: 0.65em;
+    cursor: pointer;
+}
+.wardrobe-dialog .wardrobe-field-hint {
+    font-size: 1.08em;
+    color: var(--muted);
+    margin: 0.45em 0 1.1em;
+}
+.wardrobe-dialog .wardrobe-add-error {
+    font-size: 1.08em;
+    color: #f4b9b6;
+    margin: 0.8em 0 0;
+}
+.wardrobe-add-error:empty {
+    display: none;
+}
+.wardrobe-dialog button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+.dock {
+    position: relative;
+}
+button.play {
+    border: 0;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+}
+button.play:disabled {
+    cursor: wait;
+}
+button.play:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 3px;
+}
+.launch-wardrobe {
+    display: none;
+}
+.hm-app:has(.wardrobe:not([hidden])) :is(.launch-home, #launch_progress, .update-bell) {
+    display: none;
+}
+.hm-app:has(.wardrobe:not([hidden])) .launch-wardrobe {
+    display: grid;
+}
+
+.hm-settings {
+    position: absolute;
+    z-index: 3;
+    pointer-events: none;
+}
+.hm-settings #settingsContainer {
+    pointer-events: auto;
+}
+#main:has(#settingsContainer:not([style*='display: none'])) #landingContainer {
+    display: block !important;
+    opacity: 1 !important;
+}
+#main:has(#settingsContainer:not([style*='display: none']))
+    :is(.fitting, .wardrobe, .launch, #newsButton, #launch_progress, .update-bell) {
+    visibility: hidden;
+    opacity: 0;
+    transition: none;
+}
+#landingContainer :is(.launch, #newsButton, #launch_progress) {
+    transition: opacity 220ms ease, visibility 220ms;
+}
+body:has(:is(#landingContainer, #settingsContainer):not([style*='display: none'])) #main {
+    inset: 0;
+    height: 100%;
+}
+body:has(:is(#landingContainer, #settingsContainer):not([style*='display: none'])) #frameBar {
+    position: absolute;
+    top: var(--titlebar-top);
+    right: var(--titlebar-edge);
+    width: var(--window-dock-width);
+    background: transparent !important;
+}
+body:has(:is(#landingContainer, #settingsContainer):not([style*='display: none']))
+    :is(#frameTitleDock, #frameResizableTop, #frameMain .frameResizableVert) {
+    display: none;
+}
+body:has(:is(#landingContainer, #settingsContainer):not([style*='display: none'])) #frameMain {
+    height: var(--titlebar-row);
+}
+body:has(:is(#landingContainer, #settingsContainer):not([style*='display: none']))
+    :is(#frameBar, #frameContentWin, #frameContentDarwin) {
+    -webkit-app-region: no-drag;
+}
+body:has(:is(#landingContainer, #settingsContainer):not([style*='display: none']))
+    :is(#frameButtonDockWin, #frameButtonDockDarwin) {
+    position: static;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--window-action-gap);
+    width: 100%;
+    height: var(--titlebar-row);
+    border-inline-start: 1px solid #edd4c342;
+    padding-inline-start: var(--window-action-inset);
+}
+body:has(:is(#landingContainer, #settingsContainer):not([style*='display: none'])) #frameButtonDockWin > .frameButton {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: var(--window-action-size);
+    height: var(--window-action-size);
+    margin: 0;
+    padding: 0;
+}
+#frameBar :is(.frameButton, .frameButtonDarwin) {
+    -webkit-app-region: no-drag;
+    cursor: pointer;
+    transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+#frameBar .frameButton svg {
+    pointer-events: none;
+}
+#frameBar .frameButton {
+    border-radius: 5px;
+}
+#frameBar :is(.frameButton, .frameButtonDarwin):is(:hover, :focus-visible) {
+    box-shadow: inset 0 0 0 1px #efcc9866;
+}
+#frameBar .frameButton:not(.fCb):is(:hover, :focus-visible) {
+    background-color: #efcc9838;
+}
+.hm-app .top {
+    padding-block-start: var(--titlebar-top);
+    padding-inline-end: calc(var(--titlebar-edge) + var(--window-dock-width) + var(--window-action-inset));
+    gap: 0;
+}
+.hm-app .top .brand img {
+    max-height: var(--titlebar-row);
+}
+.hm-app .top .shortcut {
+    width: var(--titlebar-row);
+    height: var(--titlebar-row);
+}
+.titlebar-drag {
+    flex: 1;
+    height: var(--titlebar-row);
+    -webkit-app-region: drag;
+}
+.hm-app #image_seal_container {
+    width: auto;
+    height: auto;
+    margin: 0;
+    border-radius: 0;
+}
+.update-bell[hidden] {
+    display: none;
+}
+.update-bell {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1.9em;
+    margin-inline-start: 0.65em;
+    color: var(--gold);
+}
+.hm-app .update-bell svg {
+    width: 1.9em;
+    height: 1.9em;
+    transform-origin: 50% 12%;
+    animation: update-bell-ring 2.7s ease-in-out infinite;
+}
+.update-bell .update-bell-dot {
+    fill: currentColor;
+    stroke: none;
+}
+@keyframes update-bell-ring {
+    0%, 32%, 100% { transform: rotate(0deg); }
+    5%, 15% { transform: rotate(15deg); }
+    10%, 20% { transform: rotate(-14deg); }
+    25% { transform: rotate(5deg); }
+}
+.hm-app #settingsMediaButton {
+    padding: 0;
+    font: inherit;
+}
+.hm-app .shortcut {
+    cursor: pointer;
+    transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.hm-app .shortcut:is(:hover, :focus-visible) {
+    border-color: var(--gold);
+    background-color: #483346;
+    box-shadow: 0 0 0.85em #efcc9833;
+}
+.hm-app .online {
+    justify-self: start;
+    font-family: inherit;
+    color: var(--ink);
+    background: none;
+    padding: 0;
+    border: 0;
+}
+.hm-app .online:not([data-online='true']) .dot {
+    background: #aa9899;
+    box-shadow: none;
+}
+.hm-app #launch_button {
+    position: static;
+    transform: none;
+    color: #2c1b21;
+    background: var(--gold);
+    font: inherit;
+    letter-spacing: normal;
+    text-shadow: none;
+    padding-inline: 0.65em;
+}
+.hm-app #launch_button:disabled {
+    opacity: 0.65;
+}
+.hm-app #launch_update_icon {
+    fill: none;
+    stroke: currentColor;
+}
+.hm-app #launch_details.launch-announcement {
+    display: block;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+.hm-app #player_count {
+    position: static;
+    font: inherit;
+    color: inherit;
+    text-align: center;
+    text-shadow: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    .hm-app :is(.fitting, .wardrobe, .shortcut) { transition: none; }
+    .hm-app .update-bell svg { animation: none; }
+    #landingContainer :is(.launch, #newsButton, #launch_progress) { transition: none; }
+}
+.hm-app #server_status_wrapper {
+    display: block;
+    padding: 0;
+    margin: 0;
+    width: auto;
+}
+.hm-app #player_count {
+    margin: 0;
+    transform: none;
+}
+.hm-app #launch_progress {
+    position: absolute;
+    top: -1px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    border: none;
+    appearance: none;
+}
+.hm-app #launch_progress::-webkit-progress-bar {
+    background: #57434a;
+}
+.hm-app #launch_progress::-webkit-progress-value {
+    background: var(--gold);
+}
+#landingContainer #newsButton {
+    position: absolute;
+    bottom: 2.2%;
+    right: 2.8%;
+    color: #d5bd9d;
+    width: 1.5em;
+    height: 1.5em;
+    padding: 0;
+    font-size: 12px;
+    background: transparent;
+    border: 0;
+}
+#landingContainer:has(.wardrobe:not([hidden])) #newsButton {
+    display: none;
+}
+#landingContainer #newsContainer {
+    z-index: 4;
+    visibility: hidden;
+    background: #221b24;
+}
+#landingContainer #newsContainer.open {
+    top: 0;
+    visibility: visible;
+}
+#hm-news-close {
+    position: absolute;
+    z-index: 1;
+    top: 20px;
+    left: 24px;
+    border: 0;
+    border-radius: 24px;
+    padding: 7px 17px;
+    color: #291f26;
+    background: #efcc98;
+    cursor: pointer;
+}

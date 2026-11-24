@@ -1,4 +1,5 @@
 // Requirements
+const got    = require('got')
 const os     = require('os')
 const semver = require('semver')
 
@@ -342,15 +343,6 @@ settingsNavDone.onclick = () => {
 const msftLoginLogger = LoggerUtil.getLogger('Microsoft Login')
 const msftLogoutLogger = LoggerUtil.getLogger('Microsoft Logout')
 
-// Bind the add mojang account button.
-document.getElementById('settingsAddMojangAccount').onclick = (e) => {
-    switchView(getCurrentView(), VIEWS.login, 500, 500, () => {
-        loginViewOnCancel = VIEWS.settings
-        loginViewOnSuccess = VIEWS.settings
-        loginCancelEnabled(true)
-    })
-}
-
 // Bind the add microsoft account button.
 document.getElementById('settingsAddMicrosoftAccount').onclick = (e) => {
     switchView(getCurrentView(), VIEWS.waiting, 500, 500, () => {
@@ -363,7 +355,6 @@ ipcRenderer.on(MSFT_OPCODE.REPLY_LOGIN, (_, ...arguments_) => {
     if (arguments_[0] === MSFT_REPLY_TYPE.ERROR) {
 
         const viewOnClose = arguments_[2]
-        console.log(arguments_)
         switchView(getCurrentView(), viewOnClose, 500, 500, () => {
 
             if(arguments_[1] === MSFT_ERROR.NOT_FINISHED) {
@@ -385,11 +376,12 @@ ipcRenderer.on(MSFT_OPCODE.REPLY_LOGIN, (_, ...arguments_) => {
         })
     } else if(arguments_[0] === MSFT_REPLY_TYPE.SUCCESS) {
         const queryMap = arguments_[1]
-        const viewOnClose = arguments_[2]
+        const viewOnSuccess = arguments_[2]
+        const viewOnFailure = arguments_[3]
 
         // Error from request to Microsoft.
         if (Object.prototype.hasOwnProperty.call(queryMap, 'error')) {
-            switchView(getCurrentView(), viewOnClose, 500, 500, () => {
+            switchView(getCurrentView(), viewOnFailure, 500, 500, () => {
                 // TODO Dont know what these errors are. Just show them I guess.
                 // This is probably if you messed up the app registration with Azure.      
                 let error = queryMap.error // Error might be 'access_denied' ?
@@ -416,7 +408,7 @@ ipcRenderer.on(MSFT_OPCODE.REPLY_LOGIN, (_, ...arguments_) => {
             const authCode = queryMap.code
             AuthManager.addMicrosoftAccount(authCode).then(value => {
                 updateSelectedAccount(value)
-                switchView(getCurrentView(), viewOnClose, 500, 500, async () => {
+                switchView(getCurrentView(), viewOnSuccess, 500, 500, async () => {
                     await prepareSettings()
                 })
             })
@@ -432,7 +424,7 @@ ipcRenderer.on(MSFT_OPCODE.REPLY_LOGIN, (_, ...arguments_) => {
                         actualDisplayableError = Lang.queryJS('login.error.unknown')
                     }
 
-                    switchView(getCurrentView(), viewOnClose, 500, 500, () => {
+                    switchView(getCurrentView(), viewOnFailure, 500, 500, () => {
                         setOverlayContent(actualDisplayableError.title, actualDisplayableError.desc, Lang.queryJS('login.tryAgain'))
                         setOverlayHandler(() => {
                             toggleOverlay(false)
@@ -468,37 +460,32 @@ function bindAuthAccountSelect(){
     })
 }
 
+const settingsLogoutDialog = document.getElementById('settingsLogoutDialog')
+let pendingLogoutButton
+
+settingsLogoutDialog.addEventListener('close', () => {
+    const button = pendingLogoutButton
+    pendingLogoutButton = null
+    if (settingsLogoutDialog.returnValue === 'logout' && button?.isConnected) {
+        processLogOut(button, true)
+    }
+})
+
 /**
- * Bind functionality for the log out button. If the logged out account was
- * the selected account, another account will be selected and the UI will
- * be updated accordingly.
+ * Ask for confirmation before signing out of the last account.
  */
 function bindAuthAccountLogOut(){
-    Array.from(document.getElementsByClassName('settingsAuthAccountLogOut')).map((val) => {
-        val.onclick = (e) => {
-            let isLastAccount = false
-            if(Object.keys(ConfigManager.getAuthAccounts()).length === 1){
-                isLastAccount = true
-                setOverlayContent(
-                    Lang.queryJS('settings.authAccountLogout.lastAccountWarningTitle'),
-                    Lang.queryJS('settings.authAccountLogout.lastAccountWarningMessage'),
-                    Lang.queryJS('settings.authAccountLogout.confirmButton'),
-                    Lang.queryJS('settings.authAccountLogout.cancelButton')
-                )
-                setOverlayHandler(() => {
-                    processLogOut(val, isLastAccount)
-                    toggleOverlay(false)
-                })
-                setDismissHandler(() => {
-                    toggleOverlay(false)
-                })
-                toggleOverlay(true, true)
+    for (const button of document.getElementsByClassName('settingsAuthAccountLogOut')) {
+        button.onclick = () => {
+            if (Object.keys(ConfigManager.getAuthAccounts()).length === 1) {
+                pendingLogoutButton = button
+                settingsLogoutDialog.returnValue = ''
+                settingsLogoutDialog.showModal()
             } else {
-                processLogOut(val, isLastAccount)
+                processLogOut(button, false)
             }
-            
         }
-    })
+    }
 }
 
 let msAccDomElementCache
@@ -511,32 +498,10 @@ let msAccDomElementCache
 function processLogOut(val, isLastAccount){
     const parent = val.closest('.settingsAuthAccount')
     const uuid = parent.getAttribute('uuid')
-    const prevSelAcc = ConfigManager.getSelectedAccount()
-    const targetAcc = ConfigManager.getAuthAccount(uuid)
-    if(targetAcc.type === 'microsoft') {
-        msAccDomElementCache = parent
-        switchView(getCurrentView(), VIEWS.waiting, 500, 500, () => {
-            ipcRenderer.send(MSFT_OPCODE.OPEN_LOGOUT, uuid, isLastAccount)
-        })
-    } else {
-        AuthManager.removeMojangAccount(uuid).then(() => {
-            if(!isLastAccount && uuid === prevSelAcc.uuid){
-                const selAcc = ConfigManager.getSelectedAccount()
-                refreshAuthAccountSelected(selAcc.uuid)
-                updateSelectedAccount(selAcc)
-                validateSelectedAccount()
-            }
-            if(isLastAccount) {
-                loginOptionsCancelEnabled(false)
-                loginOptionsViewOnLoginSuccess = VIEWS.settings
-                loginOptionsViewOnLoginCancel = VIEWS.loginOptions
-                switchView(getCurrentView(), VIEWS.loginOptions)
-            }
-        })
-        $(parent).fadeOut(250, () => {
-            parent.remove()
-        })
-    }
+    msAccDomElementCache = parent
+    switchView(getCurrentView(), VIEWS.waiting, 500, 500, () => {
+        ipcRenderer.send(MSFT_OPCODE.OPEN_LOGOUT, uuid, isLastAccount)
+    })
 }
 
 // Bind reply for Microsoft Logout.
@@ -619,26 +584,16 @@ function refreshAuthAccountSelected(uuid){
 }
 
 const settingsCurrentMicrosoftAccounts = document.getElementById('settingsCurrentMicrosoftAccounts')
-const settingsCurrentMojangAccounts = document.getElementById('settingsCurrentMojangAccounts')
 
 /**
  * Add auth account elements for each one stored in the authentication database.
  */
 function populateAuthAccounts(){
-    const authAccounts = ConfigManager.getAuthAccounts()
-    const authKeys = Object.keys(authAccounts)
-    if(authKeys.length === 0){
-        return
-    }
-    const selectedUUID = ConfigManager.getSelectedAccount().uuid
+    const selectedUUID = ConfigManager.getSelectedAccount()?.uuid
+    const accounts = Object.values(ConfigManager.getAuthAccounts())
 
-    let microsoftAuthAccountStr = ''
-    let mojangAuthAccountStr = ''
-
-    authKeys.forEach((val) => {
-        const acc = authAccounts[val]
-
-        const accHtml = `<div class="settingsAuthAccount" uuid="${acc.uuid}">
+    settingsCurrentMicrosoftAccounts.innerHTML = accounts.map((acc) => {
+        return `<div class="settingsAuthAccount" uuid="${acc.uuid}">
             <div class="settingsAuthAccountLeft">
                 <img class="settingsAuthAccountImage" alt="${acc.displayName}" src="https://mc-heads.net/body/${acc.uuid}/60">
             </div>
@@ -661,17 +616,7 @@ function populateAuthAccounts(){
                 </div>
             </div>
         </div>`
-
-        if(acc.type === 'microsoft') {
-            microsoftAuthAccountStr += accHtml
-        } else {
-            mojangAuthAccountStr += accHtml
-        }
-
-    })
-
-    settingsCurrentMicrosoftAccounts.innerHTML = microsoftAuthAccountStr
-    settingsCurrentMojangAccounts.innerHTML = mojangAuthAccountStr
+    }).join('')
 }
 
 /**
@@ -1073,6 +1018,9 @@ function bindShaderpackButton() {
 async function loadSelectedServerOnModsTab(){
     const serv = (await DistroAPI.getDistribution()).getServerById(ConfigManager.getSelectedServer())
 
+    // Show 0.0.x releases as 0.x in the compact badge.
+    const launcherRevision = remote.app.getVersion().replace(/^0\.0\./, '0.')
+
     for(const el of document.getElementsByClassName('settingsSelServContent')) {
         el.innerHTML = `
             <img class="serverListingImg" src="${serv.rawServer.icon}"/>
@@ -1081,7 +1029,7 @@ async function loadSelectedServerOnModsTab(){
                 <span class="serverListingDescription">${serv.rawServer.description}</span>
                 <div class="serverListingInfo">
                     <div class="serverListingVersion">${serv.rawServer.minecraftVersion}</div>
-                    <div class="serverListingRevision">${serv.rawServer.version}</div>
+                    <div class="serverListingRevision">${launcherRevision}</div>
                     ${serv.rawServer.mainServer ? `<div class="serverListingStarWrapper">
                         <svg id="Layer_1" viewBox="0 0 107.45 104.74" width="20px" height="20px">
                             <defs>
@@ -1097,14 +1045,6 @@ async function loadSelectedServerOnModsTab(){
         `
     }
 }
-
-// Bind functionality to the server switch button.
-Array.from(document.getElementsByClassName('settingsSwitchServerButton')).forEach(el => {
-    el.addEventListener('click', async e => {
-        e.target.blur()
-        await toggleServerSelection(true)
-    })
-})
 
 /**
  * Save mod configuration for the current selected server.
@@ -1263,14 +1203,15 @@ function bindRangeSlider(){
             // Move slider according to the mouse position.
             document.onmousemove = (e) => {
 
-                // Distance from the beginning of the bar in pixels.
-                const diff = e.pageX - v.offsetLeft - track.offsetWidth/2
+                const barBounds = v.getBoundingClientRect()
+                const halfThumbWidth = track.getBoundingClientRect().width / 2
+                const diff = e.clientX - barBounds.left - halfThumbWidth
                 
                 // Don't move the track off the bar.
-                if(diff >= 0 && diff <= v.offsetWidth-track.offsetWidth/2){
+                if(diff >= 0 && diff <= barBounds.width - halfThumbWidth){
 
                     // Convert the difference to a percentage.
-                    const perc = (diff/v.offsetWidth)*100
+                    const perc = (diff / barBounds.width) * 100
                     // Calculate the percentage of the closest notch.
                     const notch = Number(perc/sliderMeta.inc).toFixed(0)*sliderMeta.inc
 
@@ -1400,6 +1341,7 @@ const settingsTabAbout             = document.getElementById('settingsTabAbout')
 const settingsAboutChangelogTitle  = settingsTabAbout.getElementsByClassName('settingsChangelogTitle')[0]
 const settingsAboutChangelogText   = settingsTabAbout.getElementsByClassName('settingsChangelogText')[0]
 const settingsAboutChangelogButton = settingsTabAbout.getElementsByClassName('settingsChangelogButton')[0]
+const settingsAboutReleasesURL     = settingsAboutChangelogButton.href
 
 // Bind the devtools toggle button.
 document.getElementById('settingsAboutDevToolsButton').onclick = (e) => {
@@ -1451,30 +1393,27 @@ function populateAboutVersionInformation(){
  * Fetches the GitHub atom release feed and parses it for the release notes
  * of the current version. This value is displayed on the UI.
  */
-function populateReleaseNotes(){
-    $.ajax({
-        url: 'https://github.com/dscalzi/HeliosLauncher/releases.atom',
-        success: (data) => {
-            const version = 'v' + remote.app.getVersion()
-            const entries = $(data).find('entry')
-            
-            for(let i=0; i<entries.length; i++){
-                const entry = $(entries[i])
-                let id = entry.find('id').text()
-                id = id.substring(id.lastIndexOf('/')+1)
+async function populateReleaseNotes(){
+    try {
+        const feed = await got(`${settingsAboutReleasesURL}.atom`, {
+            timeout: { request: 2500 },
+            retry: { limit: 0 }
+        }).text()
+        const version = remote.app.getVersion()
+        for (const element of $.parseXML(feed).getElementsByTagName('entry')) {
+            const entry = $(element)
+            const tag = entry.find('id').text().split('/').pop()
+            if (tag !== `v${version}` && tag !== version) continue
 
-                if(id === version){
-                    settingsAboutChangelogTitle.innerHTML = entry.find('title').text()
-                    settingsAboutChangelogText.innerHTML = entry.find('content').text()
-                    settingsAboutChangelogButton.href = entry.find('link').attr('href')
-                }
-            }
-
-        },
-        timeout: 2500
-    }).catch(err => {
-        settingsAboutChangelogText.innerHTML = Lang.queryJS('settings.about.releaseNotesFailed')
-    })
+            settingsAboutChangelogButton.href = `${settingsAboutReleasesURL}/tag/${encodeURIComponent(tag)}`
+            settingsAboutChangelogTitle.textContent = entry.find('title').text()
+            const notes = entry.find('content[type="html"]').text()
+            if (notes) settingsAboutChangelogText.innerHTML = notes
+            break
+        }
+    } catch {
+        settingsAboutChangelogText.textContent = Lang.queryJS('settings.about.releaseNotesFailed')
+    }
 }
 
 /**
@@ -1509,8 +1448,17 @@ const settingsUpdateActionButton   = document.getElementById('settingsUpdateActi
 function settingsUpdateButtonStatus(text, disabled = false, handler = null){
     settingsUpdateActionButton.innerHTML = text
     settingsUpdateActionButton.disabled = disabled
-    if(handler != null){
-        settingsUpdateActionButton.onclick = handler
+    settingsUpdateActionButton.onclick = handler
+}
+
+function refreshSettingsUpdateAction(){
+    if (launcherUpdate.info == null) return
+    if (launcherUpdate.status === 'downloading') {
+        settingsUpdateButtonStatus(Lang.queryJS('landing.update.downloading'), true)
+    } else {
+        const label = launcherUpdate.status === 'ready' ? 'uicore.autoUpdate.installNowButton'
+            : launcherUpdate.info.downloadPage ? 'settings.updates.downloadButton' : 'settings.updates.downloadInLauncherButton'
+        settingsUpdateButtonStatus(Lang.queryJS(label), isGameBusy(), requestLauncherUpdate)
     }
 }
 
@@ -1518,32 +1466,23 @@ function settingsUpdateButtonStatus(text, disabled = false, handler = null){
  * Populate the update tab with relevant information.
  * 
  * @param {Object} data The update data.
+ * @param {string} currentStatus Translation key for the status of the installed version.
  */
-function populateSettingsUpdateInformation(data){
+function populateSettingsUpdateInformation(data, currentStatus = 'currentVersionTitle'){
     if(data != null){
-        settingsUpdateTitle.innerHTML = isPrerelease(data.version) ? Lang.queryJS('settings.updates.newPreReleaseTitle') : Lang.queryJS('settings.updates.newReleaseTitle')
+        const status = currentStatus === 'updateErrorTitle' ? currentStatus : isPrerelease(data.version) ? 'newPreReleaseTitle' : 'newReleaseTitle'
+        settingsUpdateTitle.textContent = Lang.queryJS(`settings.updates.${status}`)
         settingsUpdateChangelogCont.style.display = null
         settingsUpdateChangelogTitle.innerHTML = data.releaseName
         settingsUpdateChangelogText.innerHTML = data.releaseNotes
         populateVersionInformation(data.version, settingsUpdateVersionValue, settingsUpdateVersionTitle, settingsUpdateVersionCheck)
-        
-        if(process.platform === 'darwin'){
-            settingsUpdateButtonStatus(Lang.queryJS('settings.updates.downloadButton'), false, () => {
-                shell.openExternal(data.darwindownload)
-            })
-        } else {
-            settingsUpdateButtonStatus(Lang.queryJS('settings.updates.downloadingButton'), true)
-        }
     } else {
-        settingsUpdateTitle.innerHTML = Lang.queryJS('settings.updates.latestVersionTitle')
+        settingsUpdateTitle.textContent = Lang.queryJS(`settings.updates.${currentStatus}`)
         settingsUpdateChangelogCont.style.display = 'none'
         populateVersionInformation(remote.app.getVersion(), settingsUpdateVersionValue, settingsUpdateVersionTitle, settingsUpdateVersionCheck)
-        settingsUpdateButtonStatus(Lang.queryJS('settings.updates.checkForUpdatesButton'), false, () => {
-            if(!isDev){
-                ipcRenderer.send('autoUpdateAction', 'checkForUpdate')
-                settingsUpdateButtonStatus(Lang.queryJS('settings.updates.checkingForUpdatesButton'), true)
-            }
-        })
+        const checking = launcherUpdate.status === 'checking'
+        const label = checking ? 'settings.updates.checkingForUpdatesButton' : 'settings.updates.checkForUpdatesButton'
+        settingsUpdateButtonStatus(Lang.queryJS(label), checking, checkForLauncherUpdate)
     }
 }
 

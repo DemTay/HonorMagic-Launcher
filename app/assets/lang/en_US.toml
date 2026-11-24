@@ -10,7 +10,6 @@ mojangStatusTooltipTitle = "Services"
 mojangStatusNETitle = "Non&nbsp;Essentiel"
 newsButton = ""
 launchButton = "JOUER"
-launchButtonPlaceholder = "&#8226; Aucun serveur sélectionné"
 launchDetails = "Patientez.."
 newsNavigationStatus = "{currentPage} sur {totalPages}"
 newsErrorLoadSpan = "Chargement..."
@@ -18,32 +17,12 @@ newsErrorFailedSpan = "Échec"
 newsErrorRetryButton = "Réessayer"
 newsErrorNoneSpan = "Pas de nouvelles"
 
-[ejs.login]
-loginCancelText = "Annuler"
-loginSubheader = "Connexion minecraft"
-loginEmailError = "* Valeur invalide"
-loginEmailPlaceholder = "Email ou nom d'utilisateur"
-loginPasswordError = "* Requis"
-loginPasswordPlaceholder = "Mot de passe"
-loginForgotPasswordLink = "https://minecraft.net/password/forgot/"
-loginForgotPasswordText = "Mot de passe oublié?"
-loginRememberMeText = "Se souvenir de moi?"
-loginButtonText = "CONNEXION"
-loginNeedAccountLink = "https://minecraft.net/store/minecraft-java-edition/"
-loginNeedAccountText = "Besoin d'un compte?"
-loginPasswordDisclaimer1 = "Votre mot de passe est envoyé directement à Mojang et n'est jamais stocké."
-loginPasswordDisclaimer2 = "{appName} n'est pas affilié à Mojang AB."
-
 [ejs.loginOptions]
-loginOptionsTitle = "Paramètres de connexion"
+loginOptionsTitle = "Connexion Microsoft"
 loginWithMicrosoft = "Se connecter avec Microsoft"
-loginWithMojang = "Se connecter avec Mojang"
 cancelButton = "Annuler"
 
 [ejs.overlay]
-serverSelectHeader = "Serveurs disponibles"
-serverSelectConfirm = "Sélectionner"
-serverSelectCancel = "Annuler"
 accountSelectHeader = "Sélectionner un compte"
 accountSelectConfirm = "Sélectionner"
 accountSelectCancel = "Annuler"
@@ -62,8 +41,6 @@ tabAccountHeaderText = "Paramètres du compte"
 tabAccountHeaderDesc = "Ajoutez de nouveaux comptes ou gérez ceux existants."
 microsoftAccount = "Microsoft"
 addMicrosoftAccount = "+ Ajouter un compte Microsoft"
-mojangAccount = "Mojang"
-addMojangAccount = "+ Ajouter un compte Mojang"
 minecraftTabHeaderText = "Paramètres de Minecraft"
 minecraftTabHeaderDesc = "Options liées au lancement du jeu."
 gameResolutionTitle = "Résolution du jeu"
@@ -73,7 +50,6 @@ launchDetachedTitle = "Lancer le processus du jeu détaché du Launcher."
 launchDetachedDesc = "Si le jeu n'est pas détaché, fermer le Launcher fermera également le jeu."
 tabModsHeaderText = "Paramètres des mods"
 tabModsHeaderDesc = "Activer ou désactiver les mods."
-switchServerButton = "Changer"
 requiredMods = "Mods requis"
 optionalMods = "Mods optionnels"
 dropinMods = "Mods à déposer"
@@ -123,6 +99,12 @@ checkForUpdates = "Vérifier les mises à jour"
 whatsNew = "Quoi de neuf"
 updateReleaseNotes = "Notes de version de la mise à jour"
 
+[ejs.settings.logoutDialog]
+title = "Déconnexion"
+description = "Vous êtes sur le point de déconnecter votre dernier compte. Vous devrez vous reconnecter pour utiliser le launcher."
+confirm = "Se déconnecter"
+cancel = "Annuler"
+
 [ejs.waiting]
 waitingText = "En attente de Microsoft.."
 
@@ -139,14 +121,7 @@ microsoftLoginTitle = "Connexion Microsoft"
 microsoftLogoutTitle = "Déconnexion Microsoft"
 
 [js.login]
-login = "CONNEXION"
-loggingIn = "CONNEXION EN COURS"
-success = "SUCCÈS"
 tryAgain = "Réessayer"
-
-[js.login.error]
-invalidValue = "* Valeur invalide"
-requiredValue = "* Requis"
 
 [js.login.error.unknown]
 title = "Erreur inconnue lors de la connexion"
@@ -154,16 +129,19 @@ desc = "Une erreur inconnue s'est produite. Veuillez consulter la console pour p
 
 [js.landing.launch]
 pleaseWait = "Veuillez patienter.."
+progress = "Progression du lancement"
 failureTitle = "Erreur lors du lancement"
 failureText = "Voir la console (CTRL + Shift + i) pour plus de détails."
 okay = "D'accord"
 
+[js.landing.update]
+available = "Mise à jour"
+downloading = "Téléchargement…"
+ready = "Installer la mise à jour"
+progress = "Progression du téléchargement de la mise à jour"
+
 [js.landing.selectedAccount]
 noAccountSelected = "Aucun compte sélectionné"
-
-[js.landing.selectedServer]
-noSelection = "Aucune sélection"
-loading = "Chargement.."
 
 [js.landing.serverStatus]
 server = "SERVEUR"
@@ -222,12 +200,7 @@ dismiss = "Rejeter"
 executables = "Exécutables"
 allFiles = "Tous les fichiers"
 
-[js.settings.mstfLogin]
-errorTitle = "Quelque chose s'est mal passé"
-errorMessage = "L'authentification Microsoft a échoué. Veuillez réessayer."
-okButton = "OK"
-
-[js.settings.mstfLogout]
+[js.settings.msftLogout]
 errorTitle = "Quelque chose s'est mal passé"
 errorMessage = "La déconnexion de Microsoft a échoué. Veuillez réessayer."
 okButton = "OK"
@@ -235,12 +208,6 @@ okButton = "OK"
 [js.settings.authAccountSelect]
 selectButton = "Sélectionner le compte"
 selectedButton = "Compte sélectionné &#10004;"
-
-[js.settings.authAccountLogout]
-lastAccountWarningTitle = "Avertissement<br>C'est votre dernier compte"
-lastAccountWarningMessage = "Pour utiliser le Launcher, vous devez être connecté à au moins un compte. Vous devrez vous reconnecter après.<br><br>Êtes-vous sûr de vouloir vous déconnecter?"
-confirmButton = "Je suis sûr"
-cancelButton = "Annuler"
 
 [js.settings.authAccountPopulate]
 username = "Nom d'utilisateur"
@@ -273,8 +240,10 @@ releaseNotesFailed = "Échec du chargement des notes de version."
 [js.settings.updates]
 newReleaseTitle = "Nouvelle version disponible"
 newPreReleaseTitle = "Nouveau pre-release disponible"
-downloadingButton = "Téléchargement.."
-downloadButton = 'Télécharger depuis GitHub<span style="font-size: 10px;color: gray;text-shadow: none !important;">Fermez le Launcher et exécutez le dmg pour mettre à jour.</span>'
+downloadButton = "Télécharger depuis GitHub"
+downloadInLauncherButton = "Télécharger la mise à jour"
+currentVersionTitle = "Version installée"
+updateErrorTitle = "Impossible de vérifier ou de télécharger la mise à jour"
 latestVersionTitle = "Vous utilisez la dernière version"
 checkForUpdatesButton = "Vérifier les mises à jour"
 checkingForUpdatesButton = "Vérification des mises à jour.."
@@ -312,33 +281,3 @@ under18Title = "Erreur lors de la connexion :<br>Autorisation parentale requise"
 under18Desc = "Les comptes des utilisateurs de moins de 18 ans doivent être ajoutés à une famille par un adulte."
 unknownTitle = "Erreur inconnue lors de la connexion"
 unknownDesc = "Une erreur inconnue s'est produite. Veuillez consulter la console pour plus de détails."
-
-[js.auth.mojang.error]
-methodNotAllowedTitle = "Erreur interne : Méthode non autorisée"
-methodNotAllowedDesc = "Méthode non autorisée. Veuillez signaler cette erreur."
-notFoundTitle = "Erreur interne : <br>Introuvable"
-notFoundDesc = "Le point de terminaison d'authentification est introuvable. Veuillez signaler ce problème."
-accountMigratedTitle = "Erreur lors de la connexion :<br>Compte migré"
-accountMigratedDesc = "Vous avez tenté de vous connecter avec un compte migré. Veuillez réessayer en utilisant l'adresse e-mail du compte comme nom d'utilisateur."
-invalidCredentialsTitle = "Erreur lors de la connexion :<br>Identifiants invalides"
-invalidCredentialsDesc = "L'adresse e-mail ou le mot de passe que vous avez saisi est incorrect. Veuillez réessayer."
-tooManyAttemptsTitle = "Erreur lors de la connexion :<br>Trop de tentatives"
-tooManyAttemptsDesc = "Trop de tentatives de connexion ont été effectuées récemment avec ce compte. Veuillez réessayer plus tard."
-invalidTokenTitle = "Erreur lors de la connexion :<br>jeton invalide"
-invalidTokenDesc = "Le jeton d'accès fourni est invalide."
-tokenHasProfileTitle = "Erreur lors de la connexion :<br>Le jeton possède un profil"
-tokenHasProfileDesc = "Le jeton d'accès est déjà associé à un profil. La sélection des profils n'est pas encore implémentée."
-credentialsMissingTitle = "Erreur lors de la connexion :<br>Identifiants manquants"
-credentialsMissingDesc = "Nom d'utilisateur/mot de passe non fourni ou mot de passe inférieur à 3 caractères."
-invalidSaltVersionTitle = "Erreur lors de la connexion : <br>Version Salt invalide"
-invalidSaltVersionDesc = "Version de sel invalide."
-unsupportedMediaTypeTitle = "Erreur interne :<br>Type de média non pris en charge"
-unsupportedMediaTypeDesc = "Type de média non pris en charge. Veuillez signaler cette erreur."
-accountGoneTitle = "Erreur lors de la connexion :<br>Compte migré"
-accountGoneDesc = "Votre compte a été migré vers un compte Microsoft. Veuillez vous connecter avec Microsoft."
-unreachableTitle = "Erreur lors de la connexion :<br>Injoignable"
-unreachableDesc = "Impossible de contacter les serveurs d'authentification. Assurez-vous qu'ils sont en ligne et que vous êtes connecté à Internet."
-gameNotPurchasedTitle = "Erreur lors de la connexion :<br>Jeu non acheté"
-gameNotPurchasedDesc = "Le compte avec lequel vous essayez de vous connecter n'a pas acheté de copie de Minecraft. Vous pouvez en acheter une sur <a href=\"https://minecraft.net/\">Minecraft.net</a>"
-unknownErrorTitle = "Erreur inconnue lors de la connexion"
-unknownErrorDesc = "Une erreur inconnue s'est produite. Veuillez consulter la console pour plus de détails."

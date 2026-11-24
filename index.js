@@ -5,9 +5,9 @@ remoteMain.initialize()
 const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron')
 const autoUpdater                       = require('electron-updater').autoUpdater
 const ejse                              = require('ejs-electron')
-const fs                                = require('fs')
 const isDev                             = require('./app/assets/js/isdev')
 const path                              = require('path')
+const { existsSync }                    = require('fs')
 const semver                            = require('semver')
 const { pathToFileURL }                 = require('url')
 const { AZURE_CLIENT_ID, MSFT_OPCODE, MSFT_REPLY_TYPE, MSFT_ERROR, SHELL_OPCODE } = require('./app/assets/js/ipcconstants')
@@ -16,8 +16,19 @@ const LangLoader                        = require('./app/assets/js/langloader')
 // Setup Lang
 LangLoader.setupLanguage()
 
+let autoUpdateSender
+let manualUpdateDownload
+
+function notifyAutoUpdate(status, info){
+    if (autoUpdateSender && !autoUpdateSender.isDestroyed()) {
+        autoUpdateSender.send('autoUpdateNotification', status, info)
+    }
+}
+
 // Setup auto updater.
 function initAutoUpdater(event, data) {
+    const firstInit = !autoUpdateSender
+    autoUpdateSender = event.sender
 
     if(data){
         autoUpdater.allowPrerelease = true
@@ -26,32 +37,38 @@ function initAutoUpdater(event, data) {
         // autoUpdater.allowPrerelease = true
     }
     
+    // Directory builds do not include electron-builder's installer update configuration.
+    const hasUpdateConfig = existsSync(path.join(process.resourcesPath, 'app-update.yml'))
+    manualUpdateDownload = process.platform === 'darwin' || (!isDev && !hasUpdateConfig)
+    if (!isDev && !hasUpdateConfig) {
+        autoUpdater.setFeedURL({ provider: 'github', owner: 'DemTay', repo: 'HonorMagic-Launcher' })
+    }
     if(isDev){
-        autoUpdater.autoInstallOnAppQuit = false
         autoUpdater.updateConfigPath = path.join(__dirname, 'dev-app-update.yml')
     }
-    if(process.platform === 'darwin'){
-        autoUpdater.autoDownload = false
-    }
+    autoUpdater.autoDownload = false
+    autoUpdater.autoInstallOnAppQuit = false
+    if (!firstInit) return
+
     autoUpdater.on('update-available', (info) => {
-        event.sender.send('autoUpdateNotification', 'update-available', info)
+        notifyAutoUpdate('update-available', {
+            ...info,
+            downloadPage: manualUpdateDownload ? 'https://github.com/DemTay/HonorMagic-Launcher/releases' : null
+        })
+    })
+    autoUpdater.on('download-progress', ({ percent }) => {
+        notifyAutoUpdate('download-progress', percent)
     })
     autoUpdater.on('update-downloaded', (info) => {
-        event.sender.send('autoUpdateNotification', 'update-downloaded', info)
+        notifyAutoUpdate('update-downloaded', info)
     })
-    autoUpdater.on('update-not-available', (info) => {
-        event.sender.send('autoUpdateNotification', 'update-not-available', info)
+    autoUpdater.on('update-not-available', () => {
+        notifyAutoUpdate('update-not-available')
     })
-    autoUpdater.on('checking-for-update', () => {
-        event.sender.send('autoUpdateNotification', 'checking-for-update')
-    })
-    autoUpdater.on('error', (err) => {
-        event.sender.send('autoUpdateNotification', 'realerror', err)
-    }) 
 }
 
 // Open channel to listen for update actions.
-ipcMain.on('autoUpdateAction', (event, arg, data) => {
+ipcMain.on('autoUpdateAction', async (event, arg, data) => {
     switch(arg){
         case 'initAutoUpdater':
             console.log('Initializing auto updater.')
@@ -59,10 +76,22 @@ ipcMain.on('autoUpdateAction', (event, arg, data) => {
             event.sender.send('autoUpdateNotification', 'ready')
             break
         case 'checkForUpdate':
-            autoUpdater.checkForUpdates()
-                .catch(err => {
-                    event.sender.send('autoUpdateNotification', 'realerror', err)
-                })
+            try {
+                const result = await autoUpdater.checkForUpdates()
+                if (result == null) {
+                    notifyAutoUpdate('realerror')
+                }
+            } catch (error) {
+                notifyAutoUpdate('realerror', { code: error.code, message: error.message })
+            }
+            break
+        case 'downloadUpdate':
+            if (manualUpdateDownload) break
+            try {
+                await autoUpdater.downloadUpdate()
+            } catch (error) {
+                notifyAutoUpdate('update-download-error', { code: error.code, message: error.message })
+            }
             break
         case 'allowPrereleaseChange':
             if(!data){
@@ -145,13 +174,9 @@ ipcMain.on(MSFT_OPCODE.OPEN_LOGIN, (ipcEvent, ...arguments_) => {
 
     msftAuthWindow.webContents.on('did-navigate', (_, uri) => {
         if (uri.startsWith(REDIRECT_URI_PREFIX)) {
-            let queryMap = {}
+            const queryMap = Object.fromEntries(new URL(uri).searchParams)
 
-            new URL(uri).searchParams.forEach((v, k) => {
-                queryMap[k] = v;
-            });
-
-            ipcEvent.reply(MSFT_OPCODE.REPLY_LOGIN, MSFT_REPLY_TYPE.SUCCESS, queryMap, msftAuthViewSuccess)
+            ipcEvent.reply(MSFT_OPCODE.REPLY_LOGIN, MSFT_REPLY_TYPE.SUCCESS, queryMap, msftAuthViewSuccess, msftAuthViewOnClose)
 
             msftAuthSuccess = true
             msftAuthWindow.close()
@@ -221,12 +246,16 @@ ipcMain.on(MSFT_OPCODE.OPEN_LOGOUT, (ipcEvent, uuid, isLastAccount) => {
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win
+const launcherBackgrounds = ['grande-salle.webp', 'bibliotheque.webp', 'cour.webp']
+const launcherBackground = launcherBackgrounds[Math.floor(Math.random() * launcherBackgrounds.length)]
 
 function createWindow() {
 
     win = new BrowserWindow({
         width: 980,
         height: 552,
+        minWidth: 720,
+        minHeight: 406,
         icon: getPlatformIcon('SealCircle'),
         frame: false,
         webPreferences: {
@@ -239,7 +268,8 @@ function createWindow() {
     remoteMain.enable(win.webContents)
 
     const data = {
-        bkid: Math.floor((Math.random() * fs.readdirSync(path.join(__dirname, 'app', 'assets', 'images', 'backgrounds')).length)),
+        launcherVersion: app.getVersion(),
+        launcherBackground,
         lang: (str, placeHolders) => LangLoader.queryEJS(str, placeHolders)
     }
     Object.entries(data).forEach(([key, val]) => ejse.data(key, val))
@@ -339,7 +369,16 @@ function getPlatformIcon(filename){
     return path.join(__dirname, 'app', 'assets', 'images', `${filename}.${ext}`)
 }
 
-app.on('ready', createWindow)
+if (!app.requestSingleInstanceLock()) {
+    app.quit()
+} else {
+    app.on('ready', createWindow)
+    app.on('second-instance', () => {
+        if (!win) return
+        if (win.isMinimized()) win.restore()
+        win.focus()
+    })
+}
 app.on('ready', createMenu)
 
 app.on('window-all-closed', () => {
