@@ -17,7 +17,6 @@ let fatalStartupError = false
 const VIEWS = {
     landing: '#landingContainer',
     loginOptions: '#loginOptionsContainer',
-    login: '#loginContainer',
     settings: '#settingsContainer',
     welcome: '#welcomeContainer',
     waiting: '#waitingContainer'
@@ -39,7 +38,27 @@ let currentView
  * fades in.
  */
 function switchView(current, next, currentFadeTime = 500, nextFadeTime = 500, onCurrentFade = () => {}, onNextFade = () => {}){
+    if (current === next) return
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (next === VIEWS.settings) closeWardrobe()
     currentView = next
+    document.getElementById('settingsMediaButton').setAttribute('aria-expanded', String(next === VIEWS.settings))
+    if (current === VIEWS.landing && next === VIEWS.settings) {
+        Promise.resolve(onCurrentFade()).then(() => {
+            if (currentView === next) $(next).stop(true, true).fadeIn(reducedMotion ? 0 : 220, onNextFade)
+        })
+        return
+    }
+    if (current === VIEWS.settings && next === VIEWS.landing) {
+        $(next).show()
+        $(current).stop(true, true).fadeOut(reducedMotion ? 0 : 180, async () => {
+            await onCurrentFade()
+            if (currentView === next) await onNextFade()
+        })
+        return
+    }
+    if (current === VIEWS.settings) $(VIEWS.landing).hide()
+    if (reducedMotion) currentFadeTime = nextFadeTime = 0
     $(`${current}`).fadeOut(currentFadeTime, async () => {
         await onCurrentFade()
         $(`${next}`).fadeIn(nextFadeTime, async () => {
@@ -59,17 +78,16 @@ function getCurrentView(){
 
 async function showMainUI(data){
 
+    await prepareSettings(true)
     if(!isDev){
         loggerAutoUpdater.info('Initializing..')
         ipcRenderer.send('autoUpdateAction', 'initAutoUpdater', ConfigManager.getAllowPrerelease())
     }
 
-    await prepareSettings(true)
     updateSelectedServer(data.getServerById(ConfigManager.getSelectedServer()))
     refreshServerStatus()
     setTimeout(() => {
         document.getElementById('frameBar').style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
-        document.body.style.backgroundImage = `url('assets/images/backgrounds/${document.body.getAttribute('bkid')}.jpg')`
         $('#main').show()
 
         const isLoggedIn = Object.keys(ConfigManager.getAuthAccounts()).length > 0
@@ -133,7 +151,7 @@ function showFatalStartupError(){
  * @param {Object} data The distro index object.
  */
 function onDistroRefresh(data){
-    updateSelectedServer(data.getServerById(ConfigManager.getSelectedServer()))
+    updateSelectedServer(data.getServerById(ConfigManager.getSelectedServer()) ?? data.getMainServer())
     refreshServerStatus()
     initNews()
     syncModConfigurations(data)
@@ -334,45 +352,20 @@ async function validateSelectedAccount(){
             setOverlayContent(
                 Lang.queryJS('uibinder.validateAccount.failedMessageTitle'),
                 accLen > 0
-                    ? Lang.queryJS('uibinder.validateAccount.failedMessage', { 'account': selectedAcc.displayName })
-                    : Lang.queryJS('uibinder.validateAccount.failedMessageSelectAnotherAccount', { 'account': selectedAcc.displayName }),
+                    ? Lang.queryJS('uibinder.validateAccount.failedMessageSelectAnotherAccount', { 'account': selectedAcc.displayName })
+                    : Lang.queryJS('uibinder.validateAccount.failedMessage', { 'account': selectedAcc.displayName }),
                 Lang.queryJS('uibinder.validateAccount.loginButton'),
                 Lang.queryJS('uibinder.validateAccount.selectAnotherAccountButton')
             )
             setOverlayHandler(() => {
-
-                const isMicrosoft = selectedAcc.type === 'microsoft'
-
-                if(isMicrosoft) {
-                    // Empty for now
-                } else {
-                    // Mojang
-                    // For convenience, pre-populate the username of the account.
-                    document.getElementById('loginUsername').value = selectedAcc.username
-                    validateEmail(selectedAcc.username)
-                }
-                
                 loginOptionsViewOnLoginSuccess = getCurrentView()
                 loginOptionsViewOnLoginCancel = VIEWS.loginOptions
 
                 if(accLen > 0) {
                     loginOptionsViewOnCancel = getCurrentView()
                     loginOptionsViewCancelHandler = () => {
-                        if(isMicrosoft) {
-                            ConfigManager.addMicrosoftAuthAccount(
-                                selectedAcc.uuid,
-                                selectedAcc.accessToken,
-                                selectedAcc.username,
-                                selectedAcc.expiresAt,
-                                selectedAcc.microsoft.access_token,
-                                selectedAcc.microsoft.refresh_token,
-                                selectedAcc.microsoft.expires_at
-                            )
-                        } else {
-                            ConfigManager.addMojangAuthAccount(selectedAcc.uuid, selectedAcc.accessToken, selectedAcc.username, selectedAcc.displayName)
-                        }
-                        ConfigManager.save()
-                        validateSelectedAccount()
+                        prepareAccountsTab()
+                        setSelectedAccount(ConfigManager.getSelectedAccount().uuid)
                     }
                     loginOptionsCancelEnabled(true)
                 } else {
