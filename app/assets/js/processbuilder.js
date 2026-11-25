@@ -11,6 +11,7 @@ const path                  = require('path')
 const ConfigManager            = require('./configmanager')
 const addHonorMagicServer      = require('./multiplayerservers')
 const applyHonorMagicResourcePack = require('./resourcepack')
+const { prepareHdSkinLaunch }     = require('./hdskin')
 
 const logger = LoggerUtil.getLogger('ProcessBuilder')
 
@@ -64,7 +65,7 @@ class ProcessBuilder {
     /**
      * Convienence method to run the functions typically used to build a process.
      */
-    build(){
+    build(hdSkin){
         fs.ensureDirSync(this.gameDir)
         const tempNativePath = path.join(os.tmpdir(), ConfigManager.getTempNativeFolder(), crypto.pseudoRandomBytes(16).toString('hex'))
         process.throwDeprecation = true
@@ -97,10 +98,27 @@ class ProcessBuilder {
 
         logger.info('Launch Arguments:', loggableArgs)
 
-        const child = child_process.spawn(ConfigManager.getJavaExecutable(this.server.rawServer.id), args, {
-            cwd: this.gameDir,
-            detached: ConfigManager.getLaunchDetached()
-        })
+        const { env, cleanup } = prepareHdSkinLaunch(hdSkin, this.server.rawServer.address)
+        const disposeSkin = () => {
+            try {
+                cleanup()
+            } catch (error) {
+                logger.warn('Impossible de supprimer la copie temporaire du skin HD.', error)
+            }
+        }
+        let child
+        try {
+            child = child_process.spawn(ConfigManager.getJavaExecutable(this.server.rawServer.id), args, {
+                cwd: this.gameDir,
+                detached: ConfigManager.getLaunchDetached(),
+                env
+            })
+        } catch (error) {
+            disposeSkin()
+            throw error
+        }
+        child.once('error', disposeSkin)
+        child.once('close', disposeSkin)
 
         if(ConfigManager.getLaunchDetached()){
             child.unref()

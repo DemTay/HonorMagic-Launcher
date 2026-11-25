@@ -11,6 +11,7 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
         skinDimensions,
         accountSkinTexture
     } = require('./assets/js/skinmodel')
+    const { supportsHdSkins, canRelayHdSkin } = require('./assets/js/hdskin')
     const homeName = document.querySelector('.fitting .skin-name')
     const homeContext = canvas.getContext('2d')
     let homeFaces = []
@@ -410,7 +411,7 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
             try {
                 variant = await readSkin(file)
             } catch {
-                addError.textContent = 'Choisis un PNG Minecraft de largeur 64, 128, 256, 512 ou 1024 pixels, carré ou de hauteur égale à la moitié de sa largeur (16 Mo maximum).'
+                addError.textContent = 'Choisis un PNG Minecraft de 64 × 32, 64 × 64, 128 × 64 ou 128 × 128 px (16 Mo maximum).'
                 return
             }
             const entry = { id: crypto.randomUUID(), name, favorite: false, order: nextOrder, variant }
@@ -566,11 +567,11 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
         }
     }
 
-    async function applyWardrobeSkin(account) {
+    async function applyWardrobeSkin(account, server) {
         const selected = entries.find(entry => entry.id === previewId)
         const accountDefault = !selected || selected.id === official.id
         const accountVariant = accountDefault ? library.getAccountArmVariant(account.uuid) : undefined
-        if (accountDefault && !accountVariant && !library.getAccountSkin(account.uuid)?.applied) return account
+        if (accountDefault && !accountVariant && !library.getAccountSkin(account.uuid)?.applied) return { account }
         if (account.type !== 'microsoft') throw new Error('Un compte Microsoft est nécessaire pour appliquer un skin.')
         if (!(await AuthManager.validateSelected()) || ConfigManager.getSelectedAccount()?.uuid !== account.uuid) {
             throw new Error('Reconnecte ton compte Microsoft pour appliquer le skin.')
@@ -597,19 +598,29 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
                 }
             }
             const target = selected.armVariant ?? variant
+            if (supportsHdSkins(server)) {
+                const bytes = library.readSkin(selected.id)
+                if (canRelayHdSkin(bytes)) {
+                    return {
+                        account: authenticated,
+                        hdSkin: { bytes: await prepareSkinTexture(bytes, variant, target, true), variant: target }
+                    }
+                }
+            }
             await accountSkins.synchronize(authenticated, {
                 id: selected.id,
                 variant: target,
                 prepareTexture: bytes => prepareSkinTexture(bytes, variant, target)
             })
         }
-        return authenticated
+        return { account: authenticated }
     }
 
-    async function prepareSkinTexture(bytes, sourceVariant, targetVariant) {
+    async function prepareSkinTexture(bytes, sourceVariant, targetVariant, hd = false) {
         const atlas = await createImageBitmap(new Blob([bytes], { type: 'image/png' }))
         try {
-            const converted = accountSkinTexture(atlas, sourceVariant ?? skinVariant(atlas), targetVariant)
+            const source = sourceVariant ?? skinVariant(atlas)
+            const converted = hd ? convertArmVariant(atlas, source, targetVariant, true) : accountSkinTexture(atlas, source, targetVariant)
             if (converted === atlas) return bytes
             const blob = await new Promise(resolve => converted.toBlob(resolve, 'image/png'))
             if (!blob) throw new Error('Impossible de préparer le skin Minecraft.')

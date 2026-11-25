@@ -257,8 +257,7 @@ function atlasRegion(block, index, layer, surface, legacy) {
 }
 
 function skinDimensions(width, height) {
-    return Number.isInteger(width) && width >= 64 && width <= 1024 &&
-        (width & (width - 1)) === 0 && (height === width || height === width / 2)
+    return (width === 64 || width === 128) && (height === width || height === width / 2)
 }
 
 function atlasFace(atlas, block, index, layer, surface, legacy) {
@@ -293,9 +292,9 @@ function skinVariant(atlas) {
     return transparentArms ? 'slim' : 'classic'
 }
 
-function convertArmVariant(atlas, sourceVariant, targetVariant) {
-    if (sourceVariant === targetVariant) return atlas
+function convertArmVariant(atlas, sourceVariant, targetVariant, square = false) {
     const legacy = atlas.height === atlas.width / 2
+    if (sourceVariant === targetVariant && !(legacy && square)) return atlas
     const converted = document.createElement('canvas')
     const scale = atlas.width / 64
     converted.width = converted.height = atlas.width

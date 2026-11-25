@@ -14,16 +14,49 @@ Vérification : `node --test test/skinlibrary.test.js`.
 
 ## Skins standards et HD
 
-La garde-robe accepte les PNG de largeur 64, 128, 256, 512 ou 1024 pixels,
-avec une hauteur égale à la largeur (format moderne) ou à sa moitié
-(ancien format). La limite de fichier est de 16 Mo.
+La garde-robe accepte les PNG classiques de 64 × 32 ou 64 × 64 pixels et
+les PNG HD de 128 × 64 ou 128 × 128 pixels. La limite de fichier reste de 16 Mo.
 
 Les PNG importés sont conservés à leur résolution originale. Les aperçus
 de l’accueil et de la garde-robe, les miniatures et la conversion des bras
 utilisent cette résolution, y compris pour les anciens formats rectangulaires.
 
-L’envoi au compte Minecraft passe toujours par le service officiel : une copie
-de largeur 64 pixels est préparée en mémoire pour les skins HD, sans modifier
-le PNG enregistré. Le launcher n’envoie pas encore les textures HD à un mod.
-Leur utilisation en jeu à pleine résolution nécessitera une intégration adaptée
-au mod ou au service retenu.
+Les skins classiques utilisent toujours le compte Minecraft. Sans l’addon HD
+dans la distribution, le launcher utilise aussi l’ancien parcours pour les
+skins HD : envoi d’une copie réduite à 64 pixels, sans modifier l’original.
+
+## Relais HD multijoueur — Forge 1.12.2
+
+Compiler `mods/hd-skin-relay` avec Java 8 et Gradle 4.9 :
+
+```sh
+gradle -p mods/hd-skin-relay build
+```
+
+Installer `HonorMagicSkins-1.0.0.jar` dans les mods du serveur Forge et le
+déclarer comme `ForgeMod` obligatoire dans la distribution client, avec
+l’identifiant `net.demtay.mods:honormagicskins:1.0.0@jar`. Le mod est autonome :
+il n’intègre ni MorePlayerModels, ni son menu F12, ni son éditeur en jeu.
+La personnalisation reste dans la garde-robe du launcher.
+
+Sur l’instance Honor & Magic, le launcher prépare uniquement le PNG sélectionné
+et le remet au client Java. Celui-ci attend l’accord de l’addon sur le serveur
+configuré, puis transfère la texture sans réduction. Le serveur la garde en
+mémoire pendant la connexion et l’envoie aux clients équipés qui suivent le
+joueur. Le transfert est étalé sur plusieurs ticks, sans stockage serveur ni
+publication web. Les clients non équipés continuent de voir le skin du compte.
+Le retour à un skin classique passe par le compte Minecraft au prochain
+lancement et ne diffuse aucune texture HD.
+
+Le relais accepte uniquement les PNG HD carrés de 128 × 128 pixels.
+Le format 128 × 64 est converti en carré sans réduire sa largeur. Les skins
+plus grands déjà importés restent dans la garde-robe sans être modifiés et
+utilisent en jeu une copie standard de 64 pixels via le compte Minecraft.
+
+### Remplacer l’ancien JAR fusionné
+
+Le résultat du build se trouve dans `mods/hd-skin-relay/build/libs/`.
+Remplacer l’ancien JAR fusionné côté serveur et dans le dossier web des mods,
+puis mettre à jour la taille et le MD5 dans le manifeste client. Si un JAR
+MorePlayerModels séparé est encore chargé, le retirer : sinon son menu reste
+disponible. Les anciens profils MorePlayerModels sur disque ne sont pas effacés.
