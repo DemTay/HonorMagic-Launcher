@@ -6,8 +6,12 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
         paintSkin,
         enableSkinOrbit,
         buildGeometry,
-        skinVariant
+        skinVariant,
+        convertArmVariant,
+        skinDimensions,
+        accountSkinTexture
     } = require('./assets/js/skinmodel')
+    const { supportsHdSkins, canRelayHdSkin } = require('./assets/js/hdskin')
     const homeName = document.querySelector('.fitting .skin-name')
     const homeContext = canvas.getContext('2d')
     let homeFaces = []
@@ -23,6 +27,7 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
     const toggle = document.querySelector('.shortcut.shirt')
     const grid = wardrobe.querySelector('.wardrobe-grid')
     const stage = wardrobe.querySelector('canvas')
+    const armSwitch = wardrobe.querySelector('.wardrobe-arm-switch')
     const name = wardrobe.querySelector('.wardrobe-name')
     const feedback = wardrobe.querySelector('.wardrobe-feedback')
     const addDialog = wardrobe.querySelector('#wardrobe-add-dialog')
@@ -91,7 +96,9 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
         if (!entry.source) return []
         const atlas = await decodeSkin(entry.source)
         try {
-            return buildGeometry(atlas, entry.variant)
+            entry.variant ??= skinVariant(atlas)
+            const variant = entry.armVariant ?? entry.variant
+            return buildGeometry(convertArmVariant(atlas, entry.variant, variant), variant)
         } finally {
             atlas.close?.()
         }
@@ -102,10 +109,13 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
     let previewRequest = 0
 
     function describePreview() {
+        const slim = (displayedEntry?.armVariant ?? displayedEntry?.variant) === 'slim'
+        armSwitch.setAttribute('aria-checked', String(slim))
+        armSwitch.disabled = !displayedEntry?.source || displayedEntry.id !== previewId
         stage.setAttribute(
             'aria-label',
             displayedEntry
-                ? `${displayedEntry.name}, skin en 3D. Glissez ou utilisez les touches de direction pour le faire pivoter.`
+                ? `${displayedEntry.name}, skin en 3D, bras ${slim ? 'fins' : 'larges'}. Glissez ou utilisez les touches de direction pour le faire pivoter.`
                 : 'Aucun skin à afficher'
         )
         stage.tabIndex = displayedEntry ? 0 : -1
@@ -145,10 +155,10 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
         turnFrame = requestAnimationFrame(turn)
     }
 
-    function refreshPreview(animate) {
+    function refreshPreview(animate, force = false) {
         describePreview()
         const entry = entries.find((item) => item.id === previewId)
-        if (requestedId === entry?.id) return
+        if (!force && requestedId === entry?.id) return
         requestedId = entry?.id
         const request = ++previewRequest
         cancelAnimationFrame(turnFrame)
@@ -158,7 +168,7 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
             drawStage()
         }
         if (!entry) return
-        if (entry === displayedEntry) {
+        if (!force && entry === displayedEntry) {
             orbit(frontYaw)
             return
         }
@@ -169,7 +179,7 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
                     turnToSkin(entry, faces)
                 } else {
                     showSkin(entry, faces)
-                    orbit(frontYaw, true)
+                    orbit(force ? stageYaw : frontYaw, true)
                 }
             })
             .catch(() => {
@@ -199,23 +209,46 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
     }
 
     const cards = new Map()
+    function paintCard(card, entry) {
+        const bust = card.querySelector('canvas')
+        const variant = entry.armVariant
+        getFaces(entry)
+            .then((faces) => {
+                if (variant !== entry.armVariant) return
+                bust.hidden = false
+                paintSkin(bust.getContext('2d'), faces, 0.28, 7, 228)
+            })
+            .catch(() => {
+                if (variant === entry.armVariant) bust.hidden = true
+            })
+    }
+
     const visibleCards = new IntersectionObserver(
         (records) => {
             for (const { isIntersecting, target } of records) {
                 if (!isIntersecting) continue
                 visibleCards.unobserve(target)
                 const entry = entries.find((item) => item.id === target.dataset.skinId)
-                if (!entry) continue
-                const bust = target.querySelector('canvas')
-                getFaces(entry)
-                    .then((faces) => paintSkin(bust.getContext('2d'), faces, 0.28, 7, 228))
-                    .catch(() => {
-                        bust.hidden = true
-                    })
+                if (entry) paintCard(target, entry)
             }
         },
         { root: grid, rootMargin: '80px' }
     )
+
+    armSwitch.addEventListener('click', () => {
+        const entry = displayedEntry
+        if (!entry?.source || entry.id !== previewId) return
+        const next = (entry.armVariant ?? entry.variant) === 'slim' ? 'classic' : 'slim'
+        const armVariant = next === entry.variant ? null : next
+        if (entry.id === official.id) {
+            const uuid = ConfigManager.getSelectedAccount()?.uuid
+            if (!uuid || uuid !== previewAccount || !saveChange(() => library.setAccountArmVariant(uuid, armVariant))) return
+        } else if (!saveChange(() => library.update(entry.id, { armVariant }))) return
+        entry.armVariant = armVariant
+        const card = cards.get(entry.id)?.card
+        if (card) paintCard(card, entry)
+        refreshPreview(false, true)
+    })
 
     function makeCard(entry) {
         const card = document.createElement('div')
@@ -295,17 +328,20 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
     }
 
     async function readSkin(file) {
+        if (!file || file.size > 16 * 1024 * 1024) throw new Error('Taille du fichier')
         const header = new DataView(await file.slice(0, 24).arrayBuffer())
         if (
             header.byteLength !== 24 ||
             header.getUint32(0) !== 0x89504e47 ||
             header.getUint32(4) !== 0x0d0a1a0a ||
-            header.getUint32(16) !== 64 ||
-            ![32, 64].includes(header.getUint32(20))
+            header.getUint32(8) !== 13 ||
+            header.getUint32(12) !== 0x49484452 ||
+            !skinDimensions(header.getUint32(16), header.getUint32(20))
         )
             throw new Error('Dimensions du fichier')
         const bitmap = await createImageBitmap(file)
         try {
+            if (!skinDimensions(bitmap.width, bitmap.height)) throw new Error('Dimensions du fichier')
             return skinVariant(bitmap)
         } finally {
             bitmap.close()
@@ -375,7 +411,7 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
             try {
                 variant = await readSkin(file)
             } catch {
-                addError.textContent = 'Choisis un fichier PNG Minecraft de 64 × 64 ou 64 × 32 pixels.'
+                addError.textContent = 'Choisis un PNG Minecraft de 64 × 32, 64 × 64, 128 × 64 ou 128 × 128 px (16 Mo maximum).'
                 return
             }
             const entry = { id: crypto.randomUUID(), name, favorite: false, order: nextOrder, variant }
@@ -495,7 +531,8 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
         const card = cards.get(official.id)
         if (card) visibleCards.unobserve(card.card)
         cards.delete(official.id)
-        entries[0] = { ...official, source, variant }
+        const armVariant = source && previewAccount ? library.getAccountArmVariant(previewAccount) : undefined
+        entries[0] = { ...official, source, variant, armVariant }
         if (previewId === official.id) requestedId = undefined
         refresh()
     }
@@ -530,16 +567,26 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
         }
     }
 
-    async function applyWardrobeSkin(account) {
+    async function applyWardrobeSkin(account, server) {
         const selected = entries.find(entry => entry.id === previewId)
-        if ((!selected || selected.id === official.id) && !library.getAccountSkin(account.uuid)?.applied) return account
+        const accountDefault = !selected || selected.id === official.id
+        const accountVariant = accountDefault ? library.getAccountArmVariant(account.uuid) : undefined
+        if (accountDefault && !accountVariant && !library.getAccountSkin(account.uuid)?.applied) return { account }
         if (account.type !== 'microsoft') throw new Error('Un compte Microsoft est nécessaire pour appliquer un skin.')
         if (!(await AuthManager.validateSelected()) || ConfigManager.getSelectedAccount()?.uuid !== account.uuid) {
             throw new Error('Reconnecte ton compte Microsoft pour appliquer le skin.')
         }
         const authenticated = ConfigManager.getSelectedAccount()
-        if (!selected || selected.id === official.id) {
-            await accountSkins.synchronize(authenticated, {})
+        if (accountDefault) {
+            await accountSkins.synchronize(authenticated, accountVariant ? {
+                variant: accountVariant,
+                defaultTexture: async () => {
+                    const { source } = await readDefaultTexture(account.uuid)
+                    if (!source) throw new Error('Le skin Minecraft par défaut est introuvable.')
+                    return Buffer.from(await source.arrayBuffer())
+                },
+                prepareTexture: (bytes, sourceVariant) => prepareSkinTexture(bytes, sourceVariant, accountVariant)
+            } : {})
         } else {
             let variant = selected.variant
             if (!variant) {
@@ -550,9 +597,37 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
                     atlas.close?.()
                 }
             }
-            await accountSkins.synchronize(authenticated, { id: selected.id, variant })
+            const target = selected.armVariant ?? variant
+            if (supportsHdSkins(server)) {
+                const bytes = library.readSkin(selected.id)
+                if (canRelayHdSkin(bytes)) {
+                    return {
+                        account: authenticated,
+                        hdSkin: { bytes: await prepareSkinTexture(bytes, variant, target, true), variant: target }
+                    }
+                }
+            }
+            await accountSkins.synchronize(authenticated, {
+                id: selected.id,
+                variant: target,
+                prepareTexture: bytes => prepareSkinTexture(bytes, variant, target)
+            })
         }
-        return authenticated
+        return { account: authenticated }
+    }
+
+    async function prepareSkinTexture(bytes, sourceVariant, targetVariant, hd = false) {
+        const atlas = await createImageBitmap(new Blob([bytes], { type: 'image/png' }))
+        try {
+            const source = sourceVariant ?? skinVariant(atlas)
+            const converted = hd ? convertArmVariant(atlas, source, targetVariant, true) : accountSkinTexture(atlas, source, targetVariant)
+            if (converted === atlas) return bytes
+            const blob = await new Promise(resolve => converted.toBlob(resolve, 'image/png'))
+            if (!blob) throw new Error('Impossible de préparer le skin Minecraft.')
+            return Buffer.from(await blob.arrayBuffer())
+        } finally {
+            atlas.close()
+        }
     }
 
     document.addEventListener('minecraft-account-change', refreshAccountSkin)

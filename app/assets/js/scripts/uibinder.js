@@ -18,7 +18,6 @@ const VIEWS = {
     landing: '#landingContainer',
     loginOptions: '#loginOptionsContainer',
     settings: '#settingsContainer',
-    welcome: '#welcomeContainer',
     waiting: '#waitingContainer'
 }
 
@@ -98,20 +97,15 @@ async function showMainUI(data){
             validateSelectedAccount()
         }
 
-        if(ConfigManager.isFirstLaunch()){
-            currentView = VIEWS.welcome
-            $(VIEWS.welcome).fadeIn(1000)
+        if(isLoggedIn){
+            currentView = VIEWS.landing
+            $(VIEWS.landing).fadeIn(1000)
         } else {
-            if(isLoggedIn){
-                currentView = VIEWS.landing
-                $(VIEWS.landing).fadeIn(1000)
-            } else {
-                loginOptionsCancelEnabled(false)
-                loginOptionsViewOnLoginSuccess = VIEWS.landing
-                loginOptionsViewOnLoginCancel = VIEWS.loginOptions
-                currentView = VIEWS.loginOptions
-                $(VIEWS.loginOptions).fadeIn(1000)
-            }
+            loginOptionsCancelEnabled(false)
+            loginOptionsViewOnLoginSuccess = VIEWS.landing
+            loginOptionsViewOnLoginCancel = VIEWS.loginOptions
+            currentView = VIEWS.loginOptions
+            $(VIEWS.loginOptions).fadeIn(1000)
         }
 
         setTimeout(() => {

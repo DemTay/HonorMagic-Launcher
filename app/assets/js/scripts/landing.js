@@ -553,8 +553,11 @@ async function dlAsync(login = true) {
             return
         }
         let authUser
+        let hdSkin
         try {
-            authUser = await applyWardrobeSkin(account)
+            const wardrobeSkin = await applyWardrobeSkin(account, serv)
+            authUser = wardrobeSkin.account
+            hdSkin = wardrobeSkin.hdSkin
         } catch (error) {
             loggerLaunchSuite.warn('Impossible de synchroniser le skin', error.code || error.name)
             showLaunchFailure('Impossible d’appliquer le skin', 'Vérifie la connexion à ton compte Microsoft, puis réessaie ou sélectionne « Par défaut ».')
@@ -610,8 +613,9 @@ async function dlAsync(login = true) {
 
         try {
             await pb.prepareMultiplayer()
+            pb.prepareResourcePack()
             // Build Minecraft process.
-            proc = pb.build()
+            proc = pb.build(hdSkin)
             setLaunchPercentage(98, 99)
             proc.once('close', () => {
                 proc = null

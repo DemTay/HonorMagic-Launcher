@@ -2,12 +2,22 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { randomUUID } = require('node:crypto')
 const { pathToFileURL } = require('node:url')
+const childProcess = require('node:child_process')
 
 module.exports = function skinLibrary(directory, defaultEntry) {
     const index = path.join(directory, 'collection.json')
     const imagePath = id => {
         if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id)) throw new Error('Identifiant de skin invalide')
         return path.join(directory, id + '.png')
+    }
+    function setHidden(file, hidden) {
+        if (process.platform !== 'win32') return
+        try {
+            childProcess.execFileSync('attrib.exe', [hidden ? '+H' : '-H', file], { windowsHide: true })
+        } catch (error) {
+            // Visibility must never turn a successful save into a failed import.
+            console.warn('Impossible de modifier la visibilité du fichier de skins.', error.message)
+        }
     }
     function read() {
         fs.mkdirSync(directory, { recursive: true })
@@ -24,8 +34,12 @@ module.exports = function skinLibrary(directory, defaultEntry) {
                 ...collection,
                 entries: collection.entries.filter(entry => entry.id !== defaultEntry.id)
             }, null, 2), { flag: 'wx' })
+            // Windows may refuse to replace a hidden destination. Restore the
+            // attribute after replacement, including when the rename fails.
+            if (fs.existsSync(index)) setHidden(index, false)
             fs.renameSync(temporary, index)
         } finally {
+            if (fs.existsSync(index)) setHidden(index, true)
             fs.rmSync(temporary, { force: true })
         }
     }
@@ -40,6 +54,7 @@ module.exports = function skinLibrary(directory, defaultEntry) {
     return {
         load() {
             const collection = read()
+            if (fs.existsSync(index)) setHidden(index, true)
             for (const entry of collection.entries) {
                 if (entry.id !== defaultEntry.id) entry.source = pathToFileURL(imagePath(entry.id)).href
             }
@@ -92,6 +107,16 @@ module.exports = function skinLibrary(directory, defaultEntry) {
             const collection = read()
             collection.accountSkins ??= {}
             collection.accountSkins[uuid] = state
+            save(collection)
+        },
+        getAccountArmVariant(uuid) {
+            return read().accountArmVariants?.[uuid]
+        },
+        setAccountArmVariant(uuid, variant) {
+            const collection = read()
+            collection.accountArmVariants ??= {}
+            if (variant) collection.accountArmVariants[uuid] = variant
+            else delete collection.accountArmVariants[uuid]
             save(collection)
         },
         readSkin(id) {

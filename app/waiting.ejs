@@ -1,8 +1,7 @@
-<div id="waitingContainer" style="display: none;">
-    <div id="waitingContent">
-        <div class="waitingSpinner"></div>
-        <div id="waitingTextContainer">
-            <h2><%- lang('waiting.waitingText') %></h2>
-        </div>
-    </div>
+<div id="waitingContainer" class="hm-auth-view" style="display: none;">
+    <section class="hm-auth-card" role="status" aria-labelledby="waitingTitle">
+        <div class="hm-auth-emblem" aria-hidden="true"><span class="hm-auth-spinner"></span></div>
+        <h2 id="waitingTitle"><%= lang('waiting.waitingText') %></h2>
+        <p class="hm-auth-description"><%= lang('waiting.description') %></p>
+    </section>
 </div>
