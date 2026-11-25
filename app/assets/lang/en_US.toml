@@ -18,8 +18,10 @@ newsErrorRetryButton = "Réessayer"
 newsErrorNoneSpan = "Pas de nouvelles"
 
 [ejs.loginOptions]
-loginOptionsTitle = "Connexion Microsoft"
+loginOptionsTitle = "Compte Minecraft"
+description = "Connecte-toi avec le compte Microsoft associé à Minecraft Java Edition."
 loginWithMicrosoft = "Se connecter avec Microsoft"
+hint = "Identification dans la fenêtre officielle Microsoft"
 cancelButton = "Annuler"
 
 [ejs.overlay]
@@ -106,11 +108,8 @@ confirm = "Se déconnecter"
 cancel = "Annuler"
 
 [ejs.waiting]
-waitingText = "En attente de Microsoft.."
-
-[ejs.welcome]
-continueButton = "CONTINUER"
-
+waitingText = "En attente de Microsoft"
+description = "Termine la connexion dans la fenêtre Microsoft pour revenir ici."
 
 [js.discord]
 waiting = "En attente du client.."

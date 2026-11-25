@@ -43,7 +43,6 @@ exports.setDataDirectory = function(dataDirectory){
 
 const configPath = path.join(exports.getLauncherDirectory(), 'config.json')
 const configPathLEGACY = [paths.legacy, paths.root, paths.recovered].map(dir => path.join(dir, 'config.json')).find(file => fs.existsSync(file)) || path.join(paths.legacy, 'config.json')
-const firstLaunch = !fs.existsSync(configPath) && !fs.existsSync(configPathLEGACY)
 
 exports.getAbsoluteMinRAM = function(ram){
     if(ram?.minimum != null) {
@@ -206,16 +205,6 @@ function validateKeySet(srcObj, destObj){
         }
     }
     return destObj
-}
-
-/**
- * Check to see if this is the first time the user has launched the
- * application. This is determined by the existance of the data path.
- * 
- * @returns {boolean} True if this is the first launch, otherwise false.
- */
-exports.isFirstLaunch = function(){
-    return firstLaunch
 }
 
 /**

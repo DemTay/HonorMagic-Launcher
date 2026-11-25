@@ -211,324 +211,149 @@ body, button {
 
 /*******************************************************************************
  *                                                                             *
- * Welcome View (welcome.ejs)                                                  *
+ * Microsoft account views                                                     *
  *                                                                             *
  ******************************************************************************/
 
-#welcomeContainer {
+.hm-auth-view {
     position: relative;
     display: flex;
+    align-items: center;
     justify-content: center;
-    align-items: center;
-    height: 100%;
-    width: 100%;
-    background: rgba(0, 0, 0, 0.50);
-}
-
-#welcomeContent {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: 50%;
-    top: -10%;
-    position: relative;
-}
-
-/*
-.cloudDiv {
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-.cloudTop {
-    height: 50%;
-    width: 100%;
-    background-image: url('../images/cloudTrans.png');
-    animation: clouds1 80s linear infinite;
-    background-size: cover;
-}
-
-.cloudBottom {
-    height: 50%;
-    width: 100%;
-    background-image: url('../images/cloudTrans2.png');
-    animation: clouds2 70s linear infinite;
-    background-size: cover;
-}
-
-@keyframes clouds1 {
-    to {
-        background-position: 200%;
-    }
-}
-@keyframes clouds2 {
-    to {
-        background-position: 230%;
-    }
-}
-*/
-
-#welcomeImageSeal {
-    border-radius: 50%;
-    border: 2px solid #cad7e1;
-    background: rgba(1, 2, 1, 0.5);
-    height: 125px;
-    width: 125px;
-    box-shadow: 0px 0px 10px 0px rgb(0, 0, 0);
-    margin-bottom: 5%;
-    margin-top: 10%;
-}
-
-#welcomeHeader {
-    font-family: 'Avenir Medium';
-    text-align: center;
-    color: white;
-    margin-bottom: 25px;
-    letter-spacing: 1px;
-    font-size: 20px;
-    text-shadow: white 0px 0px 0px;
-}
-
-#welcomeDescription {
-    text-align: justify;
-    font-size: 13px;
-    font-weight: 100;
-    text-shadow: rgba(255, 255, 255, 0.75) 0px 0px 20px
-}
-
-#welcomeDescCTA {
-    text-align: center;
-    font-size: 14px;
-    font-weight: 100;
-    text-shadow: rgba(255, 255, 255, 0.75) 0px 0px 20px
-}
-
-/* Login button styles. */
-#welcomeButton {
-    background: none;
-    font-weight: bold;
-    letter-spacing: 2px;
-    border: none;
-    padding: 15px 5px;
-    margin: 10px 0px;
-    cursor: pointer;
-    position: relative;
-    right: -20px;
-    transition: 0.5s ease;
-    margin-top: 5%;
-    margin-bottom: -5%;
-}
-#welcomeButton:disabled {
-    color: rgba(255, 255, 255, 0.75);
-    pointer-events: none;
-}
-#welcomeButton:hover,
-#welcomeButton:focus {
-    text-shadow: 0px 0px 20px #fff;
-    outline: none;
-}
-#welcomeButton:active {
-    color: #c7c7c7;
-    text-shadow: 0px 0px 20px #c7c7c7;
-}
-#welcomeSVG {
-    -webkit-transform: translate3d(0, 0, 0);
-    overflow: visible;
-    transform: rotate(90deg);
-    margin-left: 20px;
-    transition: 0.25s ease;
-    width: 20px;
-    height: 20px;
-}
-#welcomeButton:hover #welcomeSVG,
-#welcomeButton:focus #welcomeSVG {
-    -webkit-filter: drop-shadow(0px 0px 2px #fff);
-}
-#welcomeButton:active #welcomeSVG .arrowLine {
-    stroke: #c7c7c7;
-}
-#welcomeButton:active #welcomeSVG {
-    -webkit-filter: drop-shadow(0px 0px 2px #c7c7c7);
-}
-#welcomeButton:disabled #welcomeSVG .arrowLine {
-    stroke: rgba(255, 255, 255, 0.75);
-}
-
-#welcomeButtonContent {
-    display: flex;
-    align-items: center;
-}
-
-/*******************************************************************************
- *                                                                             *
- * Waiting View (waiting.ejs)                                                  *
- *                                                                             *
- ******************************************************************************/
-
-#waitingContainer {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    width: 100%;
-    transition: filter 0.25s ease;
-    background: rgba(0, 0, 0, 0.50);
-}
-
-#waitingContent {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: 50%;
-    top: -10%;
-    position: relative;
-}
-
-.waitingSpinner:before {
-    transform: rotateX(60deg) rotateY(45deg) rotateZ(45deg);
-    animation: 750ms rotateBefore infinite linear reverse;
-}
-.waitingSpinner:after {
-    transform: rotateX(240deg) rotateY(45deg) rotateZ(45deg);
-    animation: 750ms rotateAfter infinite linear;
-}
-.waitingSpinner:before,
-.waitingSpinner:after {
     box-sizing: border-box;
-    content: '';
-    display: block;
-    position: fixed;
-    top: calc(50% - 5em);
-    /* left: 50%; */
-    margin-top: -5em;
-    margin-left: -5em;
-    width: 10em;
-    height: 10em;
-    transform-style: preserve-3d;
-    transform-origin: 50%;
-    transform: rotateY(50%);
-    perspective-origin: 50% 50%;
-    perspective: 340px;
-    background-size: 10em 10em;
-    background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+Cjxzdmcgd2lkdGg9IjI2NnB4IiBoZWlnaHQ9IjI5N3B4IiB2aWV3Qm94PSIwIDAgMjY2IDI5NyIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4bWxuczpza2V0Y2g9Imh0dHA6Ly93d3cuYm9oZW1pYW5jb2RpbmcuY29tL3NrZXRjaC9ucyI+CiAgICA8dGl0bGU+c3Bpbm5lcjwvdGl0bGU+CiAgICA8ZGVzY3JpcHRpb24+Q3JlYXRlZCB3aXRoIFNrZXRjaCAoaHR0cDovL3d3dy5ib2hlbWlhbmNvZGluZy5jb20vc2tldGNoKTwvZGVzY3JpcHRpb24+CiAgICA8ZGVmcz48L2RlZnM+CiAgICA8ZyBpZD0iUGFnZS0xIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIiBza2V0Y2g6dHlwZT0iTVNQYWdlIj4KICAgICAgICA8cGF0aCBkPSJNMTcxLjUwNzgxMywzLjI1MDAwMDM4IEMyMjYuMjA4MTgzLDEyLjg1NzcxMTEgMjk3LjExMjcyMiw3MS40OTEyODIzIDI1MC44OTU1OTksMTA4LjQxMDE1NSBDMjE2LjU4MjAyNCwxMzUuODIwMzEgMTg2LjUyODQwNSw5Ny4wNjI0OTY0IDE1Ni44MDA3NzQsODUuNzczNDM0NiBDMTI3LjA3MzE0Myw3NC40ODQzNzIxIDc2Ljg4ODQ2MzIsODQuMjE2MTQ2MiA2MC4xMjg5MDY1LDEwOC40MTAxNTMgQy0xNS45ODA0Njg1LDIxOC4yODEyNDcgMTQ1LjI3NzM0NCwyOTYuNjY3OTY4IDE0NS4yNzczNDQsMjk2LjY2Nzk2OCBDMTQ1LjI3NzM0NCwyOTYuNjY3OTY4IC0yNS40NDkyMTg3LDI1Ny4yNDIxOTggMy4zOTg0Mzc1LDEwOC40MTAxNTUgQzE2LjMwNzA2NjEsNDEuODExNDE3NCA4NC43Mjc1ODI5LC0xMS45OTIyOTg1IDE3MS41MDc4MTMsMy4yNTAwMDAzOCBaIiBpZD0iUGF0aC0xIiBmaWxsPSIjZmZmZmZmIiBza2V0Y2g6dHlwZT0iTVNTaGFwZUdyb3VwIj48L3BhdGg+CiAgICA8L2c+Cjwvc3ZnPg==);
-}
-
-#waitingTextContainer {
-    position: fixed;
-    top: 50%;
-}
-
-@keyframes rotateBefore {
-    from {
-      transform: rotateX(60deg) rotateY(45deg) rotateZ(0deg);
-    }
-    to {
-      transform: rotateX(60deg) rotateY(45deg) rotateZ(-360deg);
-    }
-}
-
-@keyframes rotateAfter {
-    from {
-      transform: rotateX(240deg) rotateY(45deg) rotateZ(0deg);
-    }
-    to {
-      transform: rotateX(240deg) rotateY(45deg) rotateZ(360deg);
-    }
-}
-
-/*******************************************************************************
- *                                                                             *
- * Login Options View (loginOptions.ejs)                                       *
- *                                                                             *
- ******************************************************************************/
-
-#loginOptionsContainer {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    width: 100%;
     height: 100%;
-    width: 100%;
-    transition: filter 0.25s ease;
-    background: rgba(0, 0, 0, 0.50);
+    padding: 12px;
+    overflow: auto;
+    background: linear-gradient(180deg, #14101788, #17121a25 24%, #17121a36 59%, transparent);
+    font: 13px/1.55 Inter, system-ui, sans-serif;
 }
 
-#loginOptionsContent {
-    border-radius: 3px;
-    position: relative;
-    top: -5%;
-}
-
-.loginOptionsMainContent {
+.hm-auth-card {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: min(100%, 390px);
+    min-height: 225px;
+    margin: auto;
+    padding: 20px 25px;
+    border: 1px solid #d0ad837a;
+    border-radius: 14px;
+    background: #28202b;
+    color: #f8efe5;
+    text-align: center;
+    box-shadow: 0 12px 45px #120d1690;
 }
 
-.loginOptionActions {
-    display: flex;
-    flex-direction: column;
-    row-gap: 10px;
+.hm-auth-card h2 {
+    margin: 0 0 0.4em;
+    color: #efcc98;
+    font: 400 27px/1.16 Palace, Georgia, serif;
 }
 
-.loginOptionButtonContainer {
-    width: 16em;
+.hm-auth-description {
+    max-width: 32ch;
+    margin: 0;
+    color: #c8baba;
 }
 
-.loginOptionButton {
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(126, 126, 126, 0.57);
-    border-radius: 3px;
-    height: 50px;
-    width: 100%;
-    text-align: left;
-    padding: 0px 25px;
+.hm-auth-card button {
+    font: inherit;
     cursor: pointer;
-    outline: none;
-    transition: 0.25s ease;
-    display: flex;
-    align-items: center;
-    column-gap: 5px;
-}
-.loginOptionButton:hover,
-.loginOptionButton:focus {
-    background: rgba(54, 54, 54, 0.25);
-    text-shadow: 0px 0px 20px white;
 }
 
-#loginOptionCancelContainer {
-    position: absolute;
-    bottom: -100px;
+.hm-auth-card button:focus-visible {
+    outline: 2px solid #f8efe5;
+    outline-offset: 3px;
+}
+
+#loginOptionMicrosoft {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-sizing: border-box;
+    max-width: 100%;
+    min-height: 32px;
+    margin: 22px 0 12px;
+    padding: 3px 16px;
+    border: 0;
+    border-radius: 99px;
+    background: #efcc98;
+    color: #2c1b21;
+    font-weight: 750;
+    box-shadow: 0 3px 16px #e5a75e30;
+}
+
+#loginOptionMicrosoft:hover { background: #ffe1b0; }
+
+#loginOptionMicrosoft img {
+    width: 17px;
+    height: 17px;
+    flex: none;
+}
+
+.hm-auth-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 0;
+    color: #d4c6c2;
+    font-size: 11px;
+}
+
+.hm-auth-hint svg {
+    width: 13px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 #loginOptionCancelButton {
-    background: none;
-    border: none;
-    padding: 2px 0px;
-    font-size: 16px;
-    font-weight: bold;
-    color: lightgrey;
-    cursor: pointer;
-    outline: none;
-    transition: 0.25s ease;
+    min-height: 36px;
+    margin-top: 12px;
+    padding: 5px 16px;
+    border: 1px solid #efcc986b;
+    border-radius: 99px;
+    background: #efcc9810;
+    color: #f8efe5;
 }
-#loginOptionCancelButton:hover,
-#loginOptionCancelButton:focus {
-    text-shadow: 0px 0px 20px lightgrey;
+
+#loginOptionCancelButton:hover { background: #efcc9822; }
+
+.hm-auth-emblem {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+    border: 1px solid #efcc986b;
+    border-radius: 14px;
+    background: #efcc9814;
 }
-#loginOptionCancelButton:active {
-    text-shadow: 0px 0px 20px rgba(211, 211, 211, 0.75);
-    color: rgba(211, 211, 211, 0.75);
+
+.hm-auth-spinner {
+    box-sizing: border-box;
+    width: 22px;
+    height: 22px;
+    border: 2px solid #efcc9840;
+    border-top-color: #efcc98;
+    border-radius: 50%;
+    animation: hm-auth-spin 0.9s linear infinite;
 }
-#loginOptionCancelButton:disabled {
-    color: rgba(211, 211, 211, 0.75);
-    pointer-events: none;
+
+@keyframes hm-auth-spin {
+    to { transform: rotate(1turn); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hm-auth-spinner { animation: none; }
 }
 
 
