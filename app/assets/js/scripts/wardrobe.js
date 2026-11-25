@@ -7,7 +7,9 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
         enableSkinOrbit,
         buildGeometry,
         skinVariant,
-        convertArmVariant
+        convertArmVariant,
+        skinDimensions,
+        accountSkinTexture
     } = require('./assets/js/skinmodel')
     const homeName = document.querySelector('.fitting .skin-name')
     const homeContext = canvas.getContext('2d')
@@ -325,17 +327,20 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
     }
 
     async function readSkin(file) {
+        if (!file || file.size > 16 * 1024 * 1024) throw new Error('Taille du fichier')
         const header = new DataView(await file.slice(0, 24).arrayBuffer())
         if (
             header.byteLength !== 24 ||
             header.getUint32(0) !== 0x89504e47 ||
             header.getUint32(4) !== 0x0d0a1a0a ||
-            header.getUint32(16) !== 64 ||
-            ![32, 64].includes(header.getUint32(20))
+            header.getUint32(8) !== 13 ||
+            header.getUint32(12) !== 0x49484452 ||
+            !skinDimensions(header.getUint32(16), header.getUint32(20))
         )
             throw new Error('Dimensions du fichier')
         const bitmap = await createImageBitmap(file)
         try {
+            if (!skinDimensions(bitmap.width, bitmap.height)) throw new Error('Dimensions du fichier')
             return skinVariant(bitmap)
         } finally {
             bitmap.close()
@@ -405,7 +410,7 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
             try {
                 variant = await readSkin(file)
             } catch {
-                addError.textContent = 'Choisis un fichier PNG Minecraft de 64 × 64 ou 64 × 32 pixels.'
+                addError.textContent = 'Choisis un PNG Minecraft de largeur 64, 128, 256, 512 ou 1024 pixels, carré ou de hauteur égale à la moitié de sa largeur (16 Mo maximum).'
                 return
             }
             const entry = { id: crypto.randomUUID(), name, favorite: false, order: nextOrder, variant }
@@ -595,7 +600,7 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
             await accountSkins.synchronize(authenticated, {
                 id: selected.id,
                 variant: target,
-                prepareTexture: target === variant ? undefined : bytes => prepareSkinTexture(bytes, variant, target)
+                prepareTexture: bytes => prepareSkinTexture(bytes, variant, target)
             })
         }
         return authenticated
@@ -604,7 +609,7 @@ const { closeWardrobe, applyWardrobeSkin } = (() => {
     async function prepareSkinTexture(bytes, sourceVariant, targetVariant) {
         const atlas = await createImageBitmap(new Blob([bytes], { type: 'image/png' }))
         try {
-            const converted = convertArmVariant(atlas, sourceVariant ?? skinVariant(atlas), targetVariant)
+            const converted = accountSkinTexture(atlas, sourceVariant ?? skinVariant(atlas), targetVariant)
             if (converted === atlas) return bytes
             const blob = await new Promise(resolve => converted.toBlob(resolve, 'image/png'))
             if (!blob) throw new Error('Impossible de préparer le skin Minecraft.')

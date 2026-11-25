@@ -610,6 +610,7 @@ async function dlAsync(login = true) {
 
         try {
             await pb.prepareMultiplayer()
+            pb.prepareResourcePack()
             // Build Minecraft process.
             proc = pb.build()
             setLaunchPercentage(98, 99)

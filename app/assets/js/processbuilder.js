@@ -10,6 +10,7 @@ const path                  = require('path')
 
 const ConfigManager            = require('./configmanager')
 const addHonorMagicServer      = require('./multiplayerservers')
+const applyHonorMagicResourcePack = require('./resourcepack')
 
 const logger = LoggerUtil.getLogger('ProcessBuilder')
 
@@ -48,6 +49,15 @@ class ProcessBuilder {
             await addHonorMagicServer(this.gameDir)
         } catch (error) {
             logger.warn('Impossible d’ajouter Honor & Magic à la liste multijoueur.', error)
+        }
+    }
+
+    prepareResourcePack(){
+        if (this.server.rawServer.id !== 'Honor&Magic-1.12.2' || this.server.rawServer.minecraftVersion !== '1.12.2') return
+        try {
+            applyHonorMagicResourcePack(this.gameDir)
+        } catch (error) {
+            logger.warn('Impossible d’activer le pack de ressources Honor & Magic.', error)
         }
     }
 
