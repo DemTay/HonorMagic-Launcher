@@ -236,7 +236,7 @@ function textureCoordinates(index, layer, legacy) {
     return { origin: layerCoordinates[mirror ? index - 1 : index], mirror }
 }
 
-function atlasFace(atlas, block, index, layer, surface, legacy) {
+function atlasRegion(block, index, layer, surface, legacy) {
     const {
         origin: [u, v],
         mirror
@@ -253,6 +253,11 @@ function atlasFace(atlas, block, index, layer, surface, legacy) {
     const opposite = { left: 'right', right: 'left' }
     const [x, y] = regions[(mirror && opposite[surface.side]) || surface.side]
     const [width, height] = surface.axes.map((axis) => block[axis])
+    return { x, y, width, height, mirror }
+}
+
+function atlasFace(atlas, block, index, layer, surface, legacy) {
+    const { x, y, width, height, mirror } = atlasRegion(block, index, layer, surface, legacy)
     const face = document.createElement('canvas')
     face.width = width
     face.height = height
@@ -281,6 +286,32 @@ function skinVariant(atlas) {
     return transparentArms ? 'slim' : 'classic'
 }
 
+function convertArmVariant(atlas, sourceVariant, targetVariant) {
+    if (sourceVariant === targetVariant) return atlas
+    const legacy = atlas.height === 32
+    const converted = document.createElement('canvas')
+    converted.width = converted.height = 64
+    const ink = converted.getContext('2d')
+    ink.imageSmoothingEnabled = false
+    ink.drawImage(atlas, 0, 0)
+    for (const [index, block] of blocks.entries()) {
+        if (block.kind !== 'arm' && !(legacy && index === 5)) continue
+        const part = { ...block, h: 12 }
+        const source = { ...part, w: part.kind === 'arm' && sourceVariant === 'slim' ? 3 : part.w }
+        const target = { ...part, w: part.kind === 'arm' && targetVariant === 'slim' ? 3 : part.w }
+        for (const layer of legacy ? ['base'] : ['base', 'outer']) {
+            const { origin: [x, y] } = textureCoordinates(index, layer, false)
+            ink.clearRect(x, y, 2 * (part.w + part.d), part.h + part.d)
+            for (const surface of surfaces) {
+                const face = atlasFace(atlas, source, index, layer, surface, legacy)
+                const region = atlasRegion(target, index, layer, surface, false)
+                ink.drawImage(face, region.x, region.y, region.width, region.height)
+            }
+        }
+    }
+    return converted
+}
+
 function buildGeometry(atlas, variant = skinVariant(atlas)) {
     const legacy = atlas.height === 32
     return blocks.flatMap((block, index) => {
@@ -295,4 +326,4 @@ function buildGeometry(atlas, variant = skinVariant(atlas)) {
     })
 }
 
-module.exports = { cosElevation, importedSole, paintSkin, enableSkinOrbit, buildGeometry, skinVariant }
+module.exports = { cosElevation, importedSole, paintSkin, enableSkinOrbit, buildGeometry, skinVariant, convertArmVariant }

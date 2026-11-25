@@ -94,6 +94,16 @@ module.exports = function skinLibrary(directory, defaultEntry) {
             collection.accountSkins[uuid] = state
             save(collection)
         },
+        getAccountArmVariant(uuid) {
+            return read().accountArmVariants?.[uuid]
+        },
+        setAccountArmVariant(uuid, variant) {
+            const collection = read()
+            collection.accountArmVariants ??= {}
+            if (variant) collection.accountArmVariants[uuid] = variant
+            else delete collection.accountArmVariants[uuid]
+            save(collection)
+        },
         readSkin(id) {
             return fs.readFileSync(imagePath(id))
         }

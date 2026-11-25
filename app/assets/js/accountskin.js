@@ -46,12 +46,16 @@ module.exports = function accountSkinService(library) {
         const stateChanged = !saved || !sameSkin(saved.original, original) || !sameSkin(saved.applied, applied)
         if (stateChanged) library.saveAccountSkin(account.uuid, { original, applied })
 
-        if (selection?.id) {
-            if (owned && applied.id === selection.id) return original
-            const result = await api.post(profileUrl + '/skins', uploadOptions(library.readSkin(selection.id), selection.variant)).json()
+        if (selection?.variant) {
+            const id = selection.id ?? null
+            if (owned && applied.id === id && applied.variant === selection.variant) return original
+            if (!id && !owned && original?.variant === selection.variant) return original
+            const source = id ? library.readSkin(id) : original ? await textures.get(original.url).buffer() : await selection.defaultTexture()
+            const bytes = selection.prepareTexture ? await selection.prepareTexture(source, original?.variant) : source
+            const result = await api.post(profileUrl + '/skins', uploadOptions(bytes, selection.variant)).json()
             applied = activeSkin(result)
             if (!applied) throw new Error('Minecraft n’a pas confirmé le skin actif.')
-            library.saveAccountSkin(account.uuid, { original, applied: { ...applied, id: selection.id } })
+            library.saveAccountSkin(account.uuid, { original, applied: { ...applied, id } })
         } else if (selection && owned) {
             if (original) {
                 const image = await textures.get(original.url).buffer()

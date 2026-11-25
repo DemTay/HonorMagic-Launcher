@@ -408,6 +408,45 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.wardrobe-arm-switch {
+    --stop: 26px;
+    position: absolute;
+    top: 42%;
+    right: 0;
+    transform: translateY(-50%);
+    display: grid;
+    grid-template-rows: repeat(2, var(--stop));
+    place-items: center;
+    box-sizing: content-box;
+    width: var(--stop);
+    padding: 3px;
+    border: 1px solid #c69c748c;
+    border-radius: 99px;
+    background: #261e28e8;
+    color: #ead5be;
+    cursor: pointer;
+}
+.wardrobe-arm-switch::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: var(--stop);
+    height: var(--stop);
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 1px 5px #0e0912b0;
+    transition: transform 200ms ease;
+}
+.wardrobe-arm-switch[aria-checked='true']::before { transform: translateY(var(--stop)); }
+.hm-app .wardrobe-arm-switch svg { position: relative; width: 17px; height: 17px; fill: currentColor; stroke: none; }
+.hm-app .wardrobe-arm-switch svg:last-child { width: 13px; height: 13px; }
+.wardrobe-arm-switch[aria-checked='false'] svg:first-of-type,
+.wardrobe-arm-switch[aria-checked='true'] svg:last-child { color: #2c1b21; }
+.wardrobe-arm-switch:disabled { opacity: 0.55; cursor: default; }
+@media (prefers-reduced-motion: reduce) {
+    .wardrobe-arm-switch::before { transition: none; }
+}
 .wardrobe-library {
     min-width: 0;
     min-height: 0;
